@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Availability.Controllers\Availability.Controllers.csproj" />
+    <ProjectReference Include="..\Availability.Presenters\Availability.Presenters.csproj" />
+    <ProjectReference Include="..\Availability.Gateways\Availability.Gateways.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Observability\Shared.Observability.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/Auth/">
+    <Project Path="src/Auth/Auth.Server/Auth.Server.csproj" />
+  </Folder>
+  <Folder Name="/Availability/">
+    <Project Path="src/Availability/Availability.Controllers/Availability.Controllers.csproj" />
+    <Project Path="src/Availability/Availability.Entities/Availability.Entities.csproj" />
+    <Project Path="src/Availability/Availability.Gateways/Availability.Gateways.csproj" />
+    <Project Path="src/Availability/Availability.Presenters/Availability.Presenters.csproj" />
+    <Project Path="src/Availability/Availability.UseCases/Availability.UseCases.csproj" />
+    <Project Path="src/Availability/Availability.Web/Availability.Web.csproj" />
+  </Folder>
+  <Folder Name="/Booking/">
+    <Project Path="src/Booking/Booking.Api/Booking.Api.csproj" />
+    <Project Path="src/Booking/Booking.Business/Booking.Business.csproj" />
+    <Project Path="src/Booking/Booking.Data/Booking.Data.csproj" />
+    <Project Path="src/Booking/Booking.Domain/Booking.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Payment/">
+    <Project Path="src/Payment/Payment.Business/Payment.Business.csproj" />
+    <Project Path="src/Payment/Payment.Data/Payment.Data.csproj" />
+    <Project Path="src/Payment/Payment.Domain/Payment.Domain.csproj" />
+    <Project Path="src/Payment/Payment.Grpc/Payment.Grpc.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="src/Shared/Shared.Observability/Shared.Observability.csproj" />
+  </Folder>
+</Solution>
