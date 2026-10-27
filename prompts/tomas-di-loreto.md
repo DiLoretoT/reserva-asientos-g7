@@ -34,3 +34,35 @@ Escribí contracts/availability-booking.md como para que lo puedan leer y aproba
 Para cada uno: ruta, parámetros, ejemplo de respuesta en JSON y códigos de estado. Los Id son Guid. Las llamadas llevan el token de servicio en el header Authorization; el detalle queda pendiente del contrato de tokens (#45).
 Reviso cuando termines, te digo si hay que cambiar algo y yo me encargo de commit, push y demás
 
+## 2026-10-27 00:38
+
+Estoy en la rama feat/listar-asientos y la tarea es el issue #3.
+
+Es el primer caso de uso de Availability. Un visitante que no inició sesión quiere ver los asientos disponibles de un evento, como indica el paso 1 del enunciado. Availability conoce los eventos y sus asientos, y Booking sabe cuáles están ocupados, según el endpoint 1 del contrato de contracts/availability-booking.md. Los asientos disponibles se obtienen restando los ocupados de todos los asientos del evento.
+
+Booking todavía no existe, así que la consulta de ocupación tiene que quedar detrás de una interfaz con una implementación simulada. Tampoco hay base de datos todavía, por lo que los eventos se guardan en memoria. Quiero seguir la organización del ejemplo de Clean Architecture del profesor (CleanArchitectureUncleBob.zip).
+
+Modo de trabajo
+
+Vamos a ir archivo por archivo, de adentro hacia afuera. No crees ni modifiques archivos en el repo. En cada paso, pasame en el chat el código del archivo, con la ruta donde va y los comentarios que justifican las decisiones. Yo lo escribo en el repo, lo reviso y te aviso cuando podemos pasar al siguiente.
+
+Pedido
+
+Empecemos por los modelos de entrada y salida del caso de uso y por sus puertos, siguiendo cómo los arma el ejemplo del profesor.
+
+## 2026-10-27 12:27
+
+antes de avanzar con tu respuesta anterior sobre listar los asientos de un evento, veamos algo más en la rama docs/contrato-availability-booking. Guillermo revisó el contrato en el PR #58 y le respondí con los cambios que vamos a hacer, que podés leer en los comentarios del PR.
+
+Aplicá estos cambios en contracts/availability-booking.md:
+
+En el endpoint 1, un asiento figura ocupado si su reserva está confirmada, o si está retenida y su hora de vencimiento todavía no llegó. Booking compara el vencimiento con la hora de su base de datos, en UTC. Además, cada asiento ocupado se devuelve con su estado, retenida o confirmada, en lugar de una lista de identificadores sola.
+
+En el endpoint 2 se aplica el mismo criterio, así que una reserva retenida cuyo vencimiento ya pasó se informa como vencida, aunque el proceso de vencimiento todavía no la haya marcado. La respuesta también incluye el asientoId de la solicitud.
+
+Si Payment no responde, la reserva se rechaza con el motivo pago_no_disponible, y el estado vencida queda para cuando nadie resolvió la reserva. Cómo lo garantiza Booking por dentro no va en el contrato.
+
+Sacá de los temas abiertos los puntos que estos cambios resuelven.
+
+Avisame para revisar y yo me encargo del commit y push
+

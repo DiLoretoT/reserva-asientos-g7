@@ -15,7 +15,9 @@ La propuesta supone que cada solicitud reserva un solo asiento, como describe el
 
 ## Criterios que comparten los dos endpoints
 
-- Un asiento está ocupado si tiene una reserva retenida o confirmada, según la definición del enunciado. Una reserva retenida es la que Booking creó y todavía espera el resultado del pago. Una reserva rechazada o vencida no ocupa el asiento.
+- Una reserva retenida es la que Booking creó y todavía espera el resultado del pago. Cada reserva retenida tiene una hora de vencimiento.
+- Un asiento está ocupado si tiene una reserva confirmada, o una reserva retenida cuya hora de vencimiento todavía no llegó. Una reserva rechazada o vencida no ocupa el asiento. El enunciado define como ocupado al asiento con una reserva retenida o confirmada. Este criterio agrega la hora de vencimiento, de modo que una reserva retenida libera el asiento al llegar esa hora, aunque el proceso de Booking que marca las reservas como `vencida` todavía no haya corrido.
+- Booking compara la hora de vencimiento con la hora de su base de datos, en UTC. Así la comparación no depende del reloj ni de la zona horaria del servidor de aplicación que atiende la consulta.
 - Booking no sabe qué asientos existen en un evento, porque ese dato es de Availability. Por eso Booking informa solo los asientos ocupados, y Availability calcula los libres restando los ocupados de los asientos que tiene registrados.
 - Los identificadores de evento, asiento y solicitud son de tipo `Guid`. Los genera Availability. Booking los recibe en el mensaje que Availability publica en el broker (Azure Service Bus).
 - Las respuestas son JSON con nombres de propiedad en camelCase (ej `asientosOcupados`). Es el formato que ASP.NET Core usa por defecto.
@@ -35,7 +37,7 @@ El formato del token, cómo lo obtiene Availability, cómo lo valida Booking y s
 
 ## Endpoint 1. Asientos ocupados de un evento
 
-Devuelve los identificadores de los asientos del evento que tienen una reserva retenida o confirmada.
+Devuelve los asientos ocupados del evento, cada uno con el estado de su reserva, `retenida` o `confirmada`. Con el estado, el sitio de Availability puede mostrar si un asiento ocupado está pendiente de pago o ya reservado.
 
 **Ruta**
 
@@ -55,11 +57,24 @@ GET /api/eventos/{eventoId}/asientos-ocupados
 {
   "eventoId": "3f2b8c1e-6d4a-4b7e-9a21-5c8e0f1d2a34",
   "asientosOcupados": [
-    "a1c4e7f0-2b5d-4e8a-9c3f-6d0b1e4a7c92",
-    "b7d0a3c6-9e1f-4a2b-8d5c-0f3e6a9b2d18"
+    {
+      "asientoId": "a1c4e7f0-2b5d-4e8a-9c3f-6d0b1e4a7c92",
+      "estado": "retenida"
+    },
+    {
+      "asientoId": "b7d0a3c6-9e1f-4a2b-8d5c-0f3e6a9b2d18",
+      "estado": "confirmada"
+    }
   ]
 }
 ```
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `asientoId` | `Guid` | Identificador del asiento ocupado, asignado por Availability. |
+| `estado` | texto | Estado de la reserva que ocupa el asiento. Vale `retenida` o `confirmada`. |
+
+Una reserva retenida figura en la lista solo mientras su hora de vencimiento no llegó.
 
 Si el evento no tiene asientos ocupados, `asientosOcupados` es una lista vacía y la respuesta sigue siendo `200 OK`.
 
@@ -96,6 +111,7 @@ Ejemplo de una reserva confirmada:
 ```json
 {
   "solicitudId": "c9e2f5a8-1b4d-4c7e-a0f3-8d6b9e2c5a71",
+  "asientoId": "a1c4e7f0-2b5d-4e8a-9c3f-6d0b1e4a7c92",
   "estado": "confirmada",
   "motivo": null
 }
@@ -106,19 +122,27 @@ Ejemplo de una reserva rechazada:
 ```json
 {
   "solicitudId": "c9e2f5a8-1b4d-4c7e-a0f3-8d6b9e2c5a71",
+  "asientoId": "a1c4e7f0-2b5d-4e8a-9c3f-6d0b1e4a7c92",
   "estado": "rechazada",
   "motivo": "pago_fallido"
 }
 ```
 
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `solicitudId` | `Guid` | Identificador de la solicitud consultada. |
+| `asientoId` | `Guid` | Identificador del asiento que pidió la solicitud, asignado por Availability. Availability también lo tiene registrado junto a la solicitud, y Booking lo incluye para que la respuesta identifique la reserva por sí sola. |
+| `estado` | texto | Estado de la reserva. Los valores posibles están en la tabla siguiente. |
+| `motivo` | texto o `null` | Motivo del rechazo. Los valores posibles están en la tabla de motivos. |
+
 **Valores de `estado`**
 
 | Valor | Significado |
 |---|---|
-| `retenida` | Booking retuvo el asiento y espera el resultado del pago. |
+| `retenida` | Booking retuvo el asiento, espera el resultado del pago y la hora de vencimiento de la reserva todavía no llegó. |
 | `confirmada` | El servicio Payment aprobó el pago y la reserva quedó confirmada. |
 | `rechazada` | La reserva no se concretó. El campo `motivo` indica por qué. |
-| `vencida` | La reserva retenida superó su tiempo de vencimiento sin resultado y el asiento se liberó. |
+| `vencida` | La reserva retenida llegó a su hora de vencimiento sin ser confirmada ni rechazada, y el asiento quedó libre. El endpoint informa este estado desde esa hora, aunque el proceso que marca las reservas como vencidas todavía no haya corrido. |
 
 **Valores de `motivo`**
 
@@ -126,9 +150,11 @@ Ejemplo de una reserva rechazada:
 
 | Valor | Significado |
 |---|---|
-| `asiento_ocupado` | El asiento ya tenía una reserva retenida o confirmada cuando Booking procesó la solicitud. |
+| `asiento_ocupado` | El asiento tenía una reserva confirmada, o una retenida con la hora de vencimiento todavía no alcanzada, cuando Booking procesó la solicitud. |
 | `pago_fallido` | Payment respondió que el pago no se aprobó. |
-| `pago_no_disponible` | Payment no respondió a la llamada de cobro de Booking. |
+| `pago_no_disponible` | Payment no respondió a la llamada de cobro de Booking, y Booking rechazó la reserva con este motivo. |
+
+El estado `vencida` corresponde a la reserva que no fue confirmada ni rechazada antes de su hora de vencimiento. Si Payment no responde, la reserva termina rechazada con `pago_no_disponible` y no vencida. Cómo asegura Booking que la falta de respuesta de Payment termine en `pago_no_disponible` y no en `vencida` es parte de su implementación y no de este contrato.
 
 **Códigos de estado**
 
@@ -151,8 +177,7 @@ El mismo intervalo afecta al endpoint 1. Supongamos que Availability le muestra 
 
 - Las dos parejas acuerdan la dirección base de Booking (host y puerto) en desarrollo y en la demo. Este documento usa rutas relativas hasta definirla.
 - Las dos parejas acuerdan si Booking responde otros códigos cuando falla por un problema propio, por ejemplo `500 Internal Server Error` o `503 Service Unavailable`, y cómo los muestra Availability.
-- Booking define cuánto dura una reserva retenida y si un asiento cuya retención ya venció deja de figurar en `asientosOcupados` aunque el proceso de vencimiento todavía no la haya marcado como `vencida`.
-- Booking define qué pasa primero cuando Payment no responde, el rechazo con `pago_no_disponible` o el vencimiento de la retención.
+- Booking define cuánto dura una reserva retenida.
 - Availability define cuánto tiempo muestra una solicitud como "en proceso" antes de tratarla como fallida, por si el mensaje nunca llega a Booking.
-- Las dos parejas acuerdan si alguno de los endpoints devuelve más datos, por ejemplo el `asientoId` o la fecha de vencimiento de una reserva retenida.
+- Las dos parejas acuerdan si alguno de los endpoints devuelve más datos, por ejemplo la hora de vencimiento de una reserva retenida.
 - Las dos parejas acuerdan cómo viaja el trace ID en las llamadas REST, para que los logs de Booking se puedan unir con los de Availability. Una opción es un header `X-Trace-Id`: en el endpoint 2 lleva el `solicitudId`, y en el endpoint 1 un GUID nuevo por consulta. Depende del formato de logs que definan Facundo y Gianluca.
