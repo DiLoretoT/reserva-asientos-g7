@@ -1,9 +1,20 @@
+using Availability.Gateways;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Base de datos propia de Availability (SQLite) y sus repositorios.
+builder.Services.AddGateways(builder.Configuration.GetConnectionString("Availability")!);
+
 var app = builder.Build();
+
+// En desarrollo, la base se crea o se actualiza sola al arrancar el sitio.
+if (app.Environment.IsDevelopment())
+{
+    app.Services.AplicarMigraciones();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
