@@ -66,3 +66,13 @@ Sacá de los temas abiertos los puntos que estos cambios resuelven.
 
 Avisame para revisar y yo me encargo del commit y push
 
+
+## 2026-10-27 21:31
+
+Ya escribí en el repo los cinco archivos de la primera parte que estuvimos trabajando. Cambié outputdataresponse respecto de tu propuesta para que devuelva todos los asientos del evento con su estado, sumando el estado desconocido y un dato de ocupaciondisponible que indica si se pudo consultar a booking o hay que mostrar algo que le indique al usuario la situación, con un mensaje entendible. 
+
+lo que quiero es que me pases ahora el código de las dos interfases que necesita el interactor, siendo la primera la que le permite consultar al repositorio de eventos los eventos y asientos. El ejemplo de clase usa un repositorio genérico, pero acá prefiero uno adaptado al evento y sus asientos, porque es lo que requiere el caso de uso, y no hay ahora mismo una razón para hacerlo más genérico. Si me equivoco y sí ves alguna razón que yo no, decime y lo revisamos. La segunda es la de la consulta de ocupación a Booking que devuelve los asientos ocupados con el estado de cada uno, según el endpoint 1 del contrato que cerramos con booking ayer. 
+
+Tené en cuenta que booking podría no responder, tenemos que contemplar ese caso y que se maneje bien el error, para que el interactor se entere de que no hubo respuesta y marcar la ocupación como no disponible, mosntrando un mensaje entendible para el usuario. 
+
+Pasame el código por acá con los comentarios, yo lo escribo en el repo.
