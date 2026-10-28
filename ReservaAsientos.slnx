@@ -1,7 +1,4 @@
 <Solution>
-  <Folder Name="/Auth/">
-    <Project Path="src/Auth/Auth.Server/Auth.Server.csproj" />
-  </Folder>
   <Folder Name="/Availability/">
     <Project Path="src/Availability/Availability.Controllers/Availability.Controllers.csproj" />
     <Project Path="src/Availability/Availability.Entities/Availability.Entities.csproj" />
