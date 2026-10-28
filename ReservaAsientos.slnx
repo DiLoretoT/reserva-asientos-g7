@@ -17,9 +17,13 @@
     <Project Path="src/Booking/Booking.Domain/Booking.Domain.csproj" />
   </Folder>
   <Folder Name="/Payment/">
-    <Project Path="src/Payment/Payment.Business/Payment.Business.csproj" />
     <Project Path="src/Payment/Payment.Data/Payment.Data.csproj" />
     <Project Path="src/Payment/Payment.Domain/Payment.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Payment/Application Business Rules/">
+    <Project Path="src/Payment/Payment.Business/Payment.Application.csproj" />
+  </Folder>
+  <Folder Name="/Payment/Payment.API/">
     <Project Path="src/Payment/Payment.Grpc/Payment.Grpc.csproj" />
   </Folder>
   <Folder Name="/Shared/">
