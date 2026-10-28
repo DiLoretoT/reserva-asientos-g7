@@ -1,0 +1,26 @@
+# Keycloak: servidor de autorización del sistema
+# Uso: copiar .env.example a .env y ejecutar `docker compose up -d` en esta carpeta.
+# Panel: http://localhost:8080  ·  Realm: reserva-asientos
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.8
+    container_name: keycloak
+    # start-dev: modo desarrollo, sin HTTPS.
+    # --import-realm: carga al arrancar los realms exportados en ./realm.
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # El realm exportado los lee como ${...} al importarse: así no quedan en el repo.
+      AVAILABILITY_WEB_CLIENT_SECRET: ${AVAILABILITY_WEB_CLIENT_SECRET}
+      BOOKING_API_CLIENT_SECRET: ${BOOKING_API_CLIENT_SECRET}
+    ports:
+      - "8080:8080"
+    volumes:
+      # Base de datos propia de Keycloak (H2). Persiste entre reinicios.
+      - keycloak-data:/opt/keycloak/data
+      - ./realm:/opt/keycloak/data/import
+
+volumes:
+  keycloak-data:
