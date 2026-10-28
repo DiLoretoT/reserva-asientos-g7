@@ -76,3 +76,15 @@ lo que quiero es que me pases ahora el código de las dos interfases que necesit
 Tené en cuenta que booking podría no responder, tenemos que contemplar ese caso y que se maneje bien el error, para que el interactor se entere de que no hubo respuesta y marcar la ocupación como no disponible, mosntrando un mensaje entendible para el usuario. 
 
 Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-28 08:27
+
+Ya commiteé los puertos, los modelos y las dos interfaces. En IConsultaOcupacion le cambié el nombre a la propiedad Disponible de ResultadoOcupacion por RespuestaOk, para que no se confunda con el estado Disponible de un asiento. Leé los archivos antes de seguir.
+
+Ahora quiero que me pases el código del Interactor del caso de uso, en la carpeta ListarAsientosDisponibles. Tiene que recibir el pedido por IInputPort, obtener el evento con sus asientos con IEventoRepository y la ocupación con IConsultaOcupacion, y entregar el resultado por IOutputPort.
+
+Si el evento no existe, devuelve EventoEncontrado en falso, termina ahí y no consulta la ocupación. Si la consulta de ocupación no tuvo respuesta, todos los asientos quedan con estado Desconocido y OcupacionDisponible en falso, así el presenter puede mostrar el aviso. Si tuvo respuesta, retenida pasa a Pendiente, confirmada a Reservado, y los asientos que no figuran como ocupados quedan Disponible. Los asientos del evento se cruzan con los ocupados por el Id del asiento. Devolvé los asientos ordenados por fila y número.
+
+Seguí la forma del Interactor del ejemplo del profesor, con las dependencias que recibe por el constructor.
+
+Pasame el código por acá con los comentarios, yo lo escribo en el repo.
