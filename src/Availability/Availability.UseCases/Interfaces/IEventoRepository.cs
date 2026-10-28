@@ -4,9 +4,11 @@ using Availability.Entities.Eventos;
 namespace Availability.UseCases.Interfaces
 {
     // Puerto hacia donde se guardan los eventos. Definido por este anillo e implementado por 
-    // una clase en un anillo más afuera. En principio se implementa el caso de uso que se
-    // necesita, que es uno que trae el evento y sus asientos. Si a futuro se necesito otra 
-    // cosa, se implementan nuevos casos de uso. 
+    // una clase en un anillo más afuera. En principio se implementa el método que se
+    // necesita, que es uno que trae el evento y sus asientos. Si a futuro se necesita otra 
+    // cosa, se implementan nuevos métodos. 
+    // Es específico de eventos y no genérico como IRepository<T>, porque los 
+    // asientos siempre se consultan junto con su evento.
 
     public interface IEventoRepository
     {

@@ -88,3 +88,13 @@ Si el evento no existe, devuelve EventoEncontrado en falso, termina ahí y no co
 Seguí la forma del Interactor del ejemplo del profesor, con las dependencias que recibe por el constructor.
 
 Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-28 09:59
+
+Ya commiteé el Interactor. Ahora quiero pasar al anillo 3, a Availability.Gateways, con las dos clases que cumplen las interfaces que usa el Interactor.
+
+La primera es un repositorio de eventos en memoria que implemente IEventoRepository, con un evento de ejemplo y sus asientos, para poder probar el caso de uso sin base de datos. Más adelante Matías lo reemplaza por el de SQLite.
+
+La segunda es una simulación de la consulta de ocupación que implemente IConsultaOcupacion y responda con la forma del endpoint 1 del contrato, con algunos asientos retenidos y otros confirmados. Quiero poder hacer que simule que Booking no responde, para probar el caso de falla.
+
+Pasame el código por acá con los comentarios, yo lo escribo en el repo.

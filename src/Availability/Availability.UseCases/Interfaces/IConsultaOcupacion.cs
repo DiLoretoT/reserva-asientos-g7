@@ -2,7 +2,7 @@
 namespace Availability.UseCases.Interfaces
 {
     // Puerto para consultar qué asientos están ocupados. Lo implementa una clase 
-    // del anillo esterior, que finalmente llamará al endpoint de booking.
+    // del anillo exterior, que finalmente llamará al endpoint de booking.
 
     public interface IConsultaOcupacion
     {

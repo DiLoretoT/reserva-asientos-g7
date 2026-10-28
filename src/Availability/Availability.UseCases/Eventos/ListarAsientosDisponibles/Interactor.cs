@@ -85,7 +85,7 @@ namespace Availability.UseCases.Eventos.ListarAsientosDisponibles
                 Asientos = asientos
             });
         }
-        //  Estado de un asiento para poder leugo mostrar en pantalla
+        // Estado de un asiento para poder luego mostrar en pantalla
         private static EstadoAsiento CalcularEstado(
             Guid asientoId,
             bool respuestaOk,
