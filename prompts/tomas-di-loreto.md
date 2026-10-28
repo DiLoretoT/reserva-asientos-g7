@@ -2,16 +2,6 @@
 
 Historial de prompts usados para implementar el TP, en orden cronológico.
 
-## 2026-10-25 19:12
-
-Background (from the session that started this one):
-Sistema de reserva de asientos con microservicios en .NET 10: Availability (sitio MVC, Clean Architecture, dominio anémico), Booking (API REST, N-Layer), Payment (API gRPC, N-Layer), servidor de autorización y Azure Service Bus como broker. Grupo de 9 personas; Tomás coordina y hace Availability con Matías. Estado: repo recién clonado y vacío, sin commits en `main`. Plan: subir la estructura de proyectos a `main` (único push directo), crear `dev` como rama por defecto, proteger `dev` y `main` con PR y una aprobación. Reglas: en el repo NO van CLAUDE.md, AGENTS.md ni instrucciones para IA; tampoco minutas ni documentos de coordinación. Ramas `<tipo>/<slug>`. Commits con marcas AI-full/AI-assisted permitidas en este repo (`git config guard.permitirMarcasIA true` ya está). Nunca commit ni push sin OK explícito de Tomás en el turno. Un hook local (`.claude/`, excluido de git) registra cada prompt de Tomás en `prompts/tomas-di-loreto.md`. La estructura de referencia está en `F:\VScode\UTN\practica-prog4` (solo la estructura de proyectos; el código de práctica de Availability, su CLAUDE.md y `docs/componentes-y-tareas.md` no van al repo). Tomás aprende .NET y C# desde cero: explicá en español, simple, sin asumir conocimientos.
-
-Task:
-[brief de sesión] Esta es la sesión de implementación del TP grupal de Programación IV (UTN), en el repo `F:\VScode\UTN\reserva-asientos-g7` (remoto `https://github.com/DiLoretoT/reserva-asientos-g7`). Tomás te va a ir mandando prompts paso a paso. No hagas nada hasta recibir su primer prompt: respondé solo "Listo, esperando el primer paso."
-
-Shared notes folder for this group of sessions (outside the repo; read siblings' notes there, leave hand-over notes or large findings there instead of pasting them into messages): C:\Users\tomas_7qljag7\AppData\Local\Claude-Data\claude_pzs8sxrjxfjjc\side-session-notes\local_8f3632ba-aa52-4a67-b8f5-0548befacd0e
-
 ## 2026-10-26 21:09
 
 Empecemos a trabajar en Availability, el sitio público del TP de reserva de asientos (Clean Architecture, dominio anémico). Revisá el issue #2 del repo de gh, que es por donde comenzamos.
@@ -29,3 +19,50 @@ agregale a Asiento un Id Guid, por la misma razón que Evento, y actualizá el c
 ## 2026-10-26 21:55
 
 No, yo hago el add, commit y push
+
+## 2026-10-26 23:39
+
+Estoy en la rama docs/contrato-availability-booking. Vamos ahora con el issue #43 (contrato Availability y Booking por REST).
+
+Availability necesita dos datos que tiene Booking: 1 qué asientos de un evento están ocupados (paso 1 del enunciado) y en qué estado quedó una solicitud de reserva (paso 7). Para que estemos alineados con la pareja que se encargad e booking, quiero dejar escrito el contrato REST como propuesta, en un PR que Booking pueda comentar.
+Criterios: un asiento está ocupado si tiene una reserva retenida o confirmada. Booking no sabe qué asientos existen, eso lo sabe Availability, así que Booking solo informa los ocupados. Entre que Availability publica la solicitud y Booking la procesa, la solicitud no existe en Booking y ese es el tramo de consistencia eventual.
+
+Pedido:
+Escribí contracts/availability-booking.md como para que lo puedan leer y aprobar los chicos de la otra pareja, con dos endpoints de Booking:
+1. Asientos ocupados de un evento: GET con el eventoId, responde los Id de los asientos ocupados.
+2. Estado de una solicitud: GET con el solicitudId, responde el estado (retenida, confirmada, rechazada o vencida) y el motivo si fue rechazada (asiento ocupado, pago fallido o pago no disponible). Si Booking todavía no la procesó, responde 404 y Availability la muestra como "en proceso".
+Para cada uno: ruta, parámetros, ejemplo de respuesta en JSON y códigos de estado. Los Id son Guid. Las llamadas llevan el token de servicio en el header Authorization; el detalle queda pendiente del contrato de tokens (#45).
+Reviso cuando termines, te digo si hay que cambiar algo y yo me encargo de commit, push y demás
+
+## 2026-10-27 00:38
+
+Estoy en la rama feat/listar-asientos y la tarea es el issue #3.
+
+Es el primer caso de uso de Availability. Un visitante que no inició sesión quiere ver los asientos disponibles de un evento, como indica el paso 1 del enunciado. Availability conoce los eventos y sus asientos, y Booking sabe cuáles están ocupados, según el endpoint 1 del contrato de contracts/availability-booking.md. Los asientos disponibles se obtienen restando los ocupados de todos los asientos del evento.
+
+Booking todavía no existe, así que la consulta de ocupación tiene que quedar detrás de una interfaz con una implementación simulada. Tampoco hay base de datos todavía, por lo que los eventos se guardan en memoria. Quiero seguir la organización del ejemplo de Clean Architecture del profesor (CleanArchitectureUncleBob.zip).
+
+Modo de trabajo
+
+Vamos a ir archivo por archivo, de adentro hacia afuera. No crees ni modifiques archivos en el repo. En cada paso, pasame en el chat el código del archivo, con la ruta donde va y los comentarios que justifican las decisiones. Yo lo escribo en el repo, lo reviso y te aviso cuando podemos pasar al siguiente.
+
+Pedido
+
+Empecemos por los modelos de entrada y salida del caso de uso y por sus puertos, siguiendo cómo los arma el ejemplo del profesor.
+
+## 2026-10-27 12:27
+
+antes de avanzar con tu respuesta anterior sobre listar los asientos de un evento, veamos algo más en la rama docs/contrato-availability-booking. Guillermo revisó el contrato en el PR #58 y le respondí con los cambios que vamos a hacer, que podés leer en los comentarios del PR.
+
+Aplicá estos cambios en contracts/availability-booking.md:
+
+En el endpoint 1, un asiento figura ocupado si su reserva está confirmada, o si está retenida y su hora de vencimiento todavía no llegó. Booking compara el vencimiento con la hora de su base de datos, en UTC. Además, cada asiento ocupado se devuelve con su estado, retenida o confirmada, en lugar de una lista de identificadores sola.
+
+En el endpoint 2 se aplica el mismo criterio, así que una reserva retenida cuyo vencimiento ya pasó se informa como vencida, aunque el proceso de vencimiento todavía no la haya marcado. La respuesta también incluye el asientoId de la solicitud.
+
+Si Payment no responde, la reserva se rechaza con el motivo pago_no_disponible, y el estado vencida queda para cuando nadie resolvió la reserva. Cómo lo garantiza Booking por dentro no va en el contrato.
+
+Sacá de los temas abiertos los puntos que estos cambios resuelven.
+
+Avisame para revisar y yo me encargo del commit y push
+
