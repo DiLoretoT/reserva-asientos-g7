@@ -1,0 +1,101 @@
+@* Mapa de la sala de un evento. La vista solo recorre el ViewModel: los textos, las clases
+   de cada estado y qué asiento se puede elegir vienen decididos por el presenter. *@
+@model Availability.Presenters.ListarAsientosDisponibles.ListarAsientosViewModel
+
+@{
+    ViewData["Title"] = Model.EventoEncontrado ? Model.NombreEvento : "Evento no encontrado";
+}
+
+<a class="volver" asp-action="Index">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    Todos los eventos
+</a>
+
+@if (!Model.EventoEncontrado)
+{
+    <div class="estado-vacio">
+        <h1 class="estado-vacio__titulo">Evento no encontrado</h1>
+        <p>@Model.MensajeEventoNoEncontrado</p>
+        <a class="boton" asp-action="Index">Ver los eventos</a>
+    </div>
+    return;
+}
+
+<h1 class="titulo-pagina">@Model.NombreEvento</h1>
+<p class="subtitulo">@Model.FechaTexto</p>
+
+@if (Model.AvisoOcupacion is not null)
+{
+    @* role="status" hace que el lector de pantalla lo anuncie al cargar, sin interrumpir
+       como lo haría role="alert", que se reserva para errores que piden actuar ya. *@
+    <div class="aviso" role="status">
+        <svg class="aviso__icono" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M12 10v5M12 18v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        <div>
+            <p class="aviso__titulo">@Model.AvisoOcupacionTitulo</p>
+            <p>@Model.AvisoOcupacion</p>
+        </div>
+    </div>
+}
+
+<section class="sala" aria-labelledby="titulo-sala">
+    <h2 id="titulo-sala" class="solo-lectores">Mapa de asientos</h2>
+    <div class="escenario" aria-hidden="true">Escenario</div>
+
+    <div class="sala__filas">
+        <ul class="filas" data-mapa-asientos>
+            @foreach (var fila in Model.Filas)
+            {
+                <li class="fila">
+                    <span class="fila__letra" aria-hidden="true">@fila.Letra</span>
+                    <ul class="fila__asientos" aria-label="@fila.Nombre">
+                        @foreach (var asiento in fila.Asientos)
+                        {
+                            @* Todos los asientos son botones, también los que no se pueden
+                               elegir. Se marcan con aria-disabled y no con disabled, porque un
+                               botón deshabilitado no recibe el foco ni el mouse, y entonces no
+                               se podría leer su estado con el teclado ni al pasar el mouse.
+                               aria-pressed solo va en los que se pueden elegir. *@
+                            <li>
+                                <button type="button"
+                                        class="asiento @asiento.ClaseCss"
+                                        aria-label="@asiento.Descripcion"
+                                        aria-pressed="@(asiento.Seleccionable ? "false" : null)"
+                                        aria-disabled="@(asiento.Seleccionable ? null : "true")"
+                                        data-seleccionable="@(asiento.Seleccionable ? "true" : "false")"
+                                        data-etiqueta="@asiento.Etiqueta"
+                                        data-descripcion="@asiento.Descripcion">
+                                    @asiento.Numero
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                    <span class="fila__letra" aria-hidden="true">@fila.Letra</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <ul class="referencias" aria-label="Referencias">
+        @foreach (var referencia in Model.Referencias)
+        {
+            <li><span class="asiento @referencia.ClaseCss" aria-hidden="true"></span>@referencia.Texto</li>
+        }
+    </ul>
+</section>
+
+<div class="resumen">
+    <div>
+        @* aria-live hace que el lector de pantalla anuncie el cambio cuando se elige un
+           asiento, sin mover el foco. *@
+        <p class="resumen__texto" aria-live="polite" data-resumen-texto>Elegí un asiento disponible en el mapa.</p>
+        <p class="resumen__nota">La reserva se habilita en la próxima versión del sitio.</p>
+    </div>
+    <div class="resumen__acciones">
+        <button type="button" class="boton boton--texto" data-resumen-quitar hidden>Quitar selección</button>
+        <button type="button" class="boton" disabled>Reservar</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/mapa-asientos.js" asp-append-version="true"></script>
+}
