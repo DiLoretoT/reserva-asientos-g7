@@ -1,3 +1,4 @@
+// Tomás Di Loreto
 namespace Availability.Entities.Eventos
 {
     // Entidad de dominio: un asiento que existe en un evento. Anémica, solo datos.

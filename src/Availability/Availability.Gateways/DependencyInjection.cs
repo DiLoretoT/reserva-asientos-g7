@@ -1,5 +1,8 @@
 using Availability.Gateways.Persistencia;
 using Availability.Gateways.Persistencia.Repositorios;
+using Availability.Gateways.Booking;
+using Availability.UseCases.Interfaces;
+using Microsoft.Extensions.Logging;
 using Availability.UseCases.Eventos;
 using Availability.UseCases.Solicitudes;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +18,10 @@ namespace Availability.Gateways
     // DbContext): solo sabe que existe AddGateways.
     public static class DependencyInjection
     {
-        public static IServiceCollection AddGateways(this IServiceCollection services, string connectionString)
+        public static IServiceCollection AddGateways(
+            this IServiceCollection services,
+            string connectionString,
+            bool simularBookingSinRespuesta)
         {
             services.AddDbContext<AvailabilityDbContext>(options =>
                 options.UseSqlite(connectionString));
@@ -24,6 +30,16 @@ namespace Availability.Gateways
             // Cuando un caso de uso pida IEventoRepository, recibe un EventoRepository.
             services.AddScoped<IEventoRepository, EventoRepository>();
             services.AddScoped<ISolicitudRepository, SolicitudRepository>();
+
+            // Mientras Booking no tenga su API, IConsultaOcupacion se resuelve con la
+            // simulación. Cuando exista, esta línea se reemplaza por el registro del cliente
+            // HTTP y el resto del servicio no cambia.
+            // Es Singleton, una sola instancia para toda la aplicación, porque no guarda datos
+            // de ningún pedido. La opción de simular la falla llega desde Program.cs, igual
+            // que el connection string, para que Gateways no lea la configuración por su cuenta.
+            services.AddSingleton<IConsultaOcupacion>(sp => new ConsultaOcupacionSimulada(
+                simularBookingSinRespuesta,
+                sp.GetRequiredService<ILogger<ConsultaOcupacionSimulada>>()));
 
             return services;
         }
