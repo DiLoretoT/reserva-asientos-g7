@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Payment.Application.Models;
 
 namespace Payment.Application.DTO
 {
     public class ProcessPaymentRequest
     {
-        public string BookingId { get; set; }
+        //Son los atributos que se van a recibir desde el front para procesar un pago
+        public required string BookingId { get; set; }
         public decimal Amount { get; set; }
         public string Currency { get; set; } = "ARS";
-        public string PaymentStatus { get; set; } = string.Empty;
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
     }
 }
