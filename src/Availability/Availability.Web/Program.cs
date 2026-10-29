@@ -1,8 +1,9 @@
 using Availability.Controllers.Eventos;
 using Availability.Gateways;
 using Availability.Presenters.ListarAsientosDisponibles;
-using Availability.UseCases.Eventos.ListarAsientosDisponibles;
-using Availability.UseCases.Eventos.ListarAsientosDisponibles.Interfaces;
+using Availability.Presenters.ListarEventos;
+using ListarAsientos = Availability.UseCases.Eventos.ListarAsientosDisponibles;
+using ListarEventos = Availability.UseCases.Eventos.ListarEventos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,15 +16,26 @@ builder.Services.AddGateways(
     builder.Configuration.GetConnectionString("Availability")!,
     builder.Configuration.GetValue<bool>("Booking:SimularSinRespuesta"));
 
-// Caso de uso ListarAsientosDisponibles, registrado como en el ejemplo de la cátedra.
-// El Interactor y el controller son Transient porque no guardan nada entre pedidos.
-builder.Services.AddTransient<IInputPort, Interactor>();
-builder.Services.AddTransient<ListarAsientosController>();
+// Cada caso de uso tiene clases con el mismo nombre (Interactor, IInputPort, IOutputPort)
+// en su propio namespace. Los alias ListarAsientos y ListarEventos de los using de arriba
+// indican de qué caso de uso es cada una.
+//
+// En los dos casos, el Interactor y el controller son Transient porque no guardan nada
+// entre pedidos. El presenter es Scoped, una instancia por pedido HTTP, y quien pide
+// IOutputPort recibe esa misma instancia, así el controller lee el ViewModel que llenó
+// el Interactor.
 
-// El presenter es Scoped, una instancia por pedido HTTP, y quien pide IOutputPort recibe
-// esa misma instancia. Así el controller lee el ViewModel que llenó el Interactor.
+// Caso de uso ListarAsientosDisponibles.
+builder.Services.AddTransient<ListarAsientos.Interfaces.IInputPort, ListarAsientos.Interactor>();
+builder.Services.AddTransient<ListarAsientosController>();
 builder.Services.AddScoped<ListarAsientosPresenter>();
-builder.Services.AddScoped<IOutputPort>(sp => sp.GetRequiredService<ListarAsientosPresenter>());
+builder.Services.AddScoped<ListarAsientos.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ListarAsientosPresenter>());
+
+// Caso de uso ListarEventos.
+builder.Services.AddTransient<ListarEventos.Interfaces.IInputPort, ListarEventos.Interactor>();
+builder.Services.AddTransient<ListarEventosController>();
+builder.Services.AddScoped<ListarEventosPresenter>();
+builder.Services.AddScoped<ListarEventos.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ListarEventosPresenter>());
 
 var app = builder.Build();
 
@@ -48,9 +60,10 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+// La página de inicio es la lista de eventos, por eso el controller por defecto es Eventos.
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Eventos}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 
