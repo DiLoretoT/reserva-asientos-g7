@@ -114,3 +114,19 @@ Tercero, el controller y la vista Razor que muestre los asientos agrupados por f
 Por último, el registro en Program.cs, donde el presenter tiene que ser la misma instancia por pedido para el controller y para el interactor, como hizo el profesor con GetRequiredService.
 
 Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-29 01:10
+
+Ya subí el caso de uso de listar asientos en feat/listar-asientos, con el PR del issue #3. Leé esa branch antes de seguir. Ahora quiero preparar el issue #7, las vistas MVC de Availability.
+
+Según comentó el profe, el front no se evalúa y que se puede generar con IA, pero que la solución tiene que levantarse y funcionar con el front. Igual quiero que el sitio se vea bien y sea cómodo de usar, con un estilo como el de las páginas de Apple o Samsung, con mucho espacio en blanco, tipografía grande y limpia, una paleta neutra con un solo color de acento, bordes redondeados, sombras suaves, transiciones cortas, y modo claro y oscuro según la configuración del sistema. Resolvelo con Razor y CSS propio, más algo de JavaScript sin frameworks si hace falta, sin sumar dependencias externas ni fuentes que se descarguen de internet. Usá las fuentes del sistema.
+
+Primero quiero un layout común en Views/Shared que reemplace el de la plantilla, en español, con el nombre del sitio y sin los enlaces a Home y Privacy, para que las pantallas de reserva y seguimiento de los issues #4 y #5 lo reusen después.
+
+Después quiero una página de inicio que liste los eventos con su nombre y su fecha, cada uno con un enlace a sus asientos. Para eso hace falta un caso de uso ListarEventos con la misma estructura que ListarAsientosDisponibles, que use el ListarAsync del IEventoRepository de Matías.
+
+Por último, la página de asientos con EventosController y la vista que ya me pasaste, rediseñada como un mapa de la sala, con el escenario arriba, las filas con su letra, los asientos como botones con su estado y una referencia de colores. El estado no puede depender solo del color, así que cada asiento tiene que mostrarlo también al pasar el mouse y para los lectores de pantalla. Un asiento disponible se puede seleccionar y queda resaltado con un resumen abajo, pero todavía no envía nada, porque la solicitud de reserva es del issue #4. Cuando Booking no responde, el aviso tiene que ser claro y los asientos se ven sin información. Si el diseño necesita otras clases CSS en lugar de las de Bootstrap, cambiá los valores de ClaseCss en el ViewModel, así la vista sigue sin decidir colores.
+
+Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura, no explicar lo que hace cada línea. Probalo en el navegador con el evento 1, con Booking caído y con un evento que no existe, como hiciste antes.
+
+Pasame el código por acá con los comentarios, yo lo escribo en el repo.
