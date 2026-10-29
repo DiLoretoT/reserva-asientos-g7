@@ -1,5 +1,6 @@
 // Tomás Di Loreto
 using Availability.Entities.Eventos;
+using Availability.UseCases.Eventos;
 using Availability.UseCases.Eventos.ListarAsientosDisponibles.Interfaces;
 using Availability.UseCases.Eventos.ListarAsientosDisponibles.Models;
 using Availability.UseCases.Interfaces;
@@ -32,7 +33,7 @@ namespace Availability.UseCases.Eventos.ListarAsientosDisponibles
         public async Task HandleAsync(InputDataRequest input)
         {
             // Pide el evento con sus asientos. Puede volver null si no existe.
-            Evento? evento = await _eventoRepository.ObtenerPorIdAsync(input.EventoId);
+            Evento? evento = await _eventoRepository.ObtenerConAsientosAsync(input.EventoId);
 
             // Si el evento no existe, se informa y el caso de uso termina acá. No se consulta
             // a Booking, porque no hay asientos con los que cruzar la ocupación.
