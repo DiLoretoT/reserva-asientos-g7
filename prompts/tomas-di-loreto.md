@@ -98,3 +98,19 @@ La primera es un repositorio de eventos en memoria que implemente IEventoReposit
 La segunda es una simulación de la consulta de ocupación que implemente IConsultaOcupacion y responda con la forma del endpoint 1 del contrato, con algunos asientos retenidos y otros confirmados. Quiero poder hacer que simule que Booking no responde, para probar el caso de falla.
 
 Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-29 00:11
+
+Ya escribí la respuesta del endpoint 1 en Availability.Gateways/Booking/AsientosOcupadosResponse.cs y su traductor en Booking/MapeosBooking.cs, que convierte esa respuesta en ResultadoOcupacion con los métodos de extensión de la misma forma que Persistencia/Mapeos.cs de Matías. Leé esos dos archivos antes de seguir. El repositorio en memoria ya no hace falta, porque usamos el EventoRepository de SQLite que mergeó Matías, con los datos iniciales de DatosIniciales.cs.
+
+Quiero terminar el caso de uso hasta verlo en el navegador, así que pasame en una sola respuesta todo lo que falta, en este orden, para escribirlo uno tras otro.
+
+Primero, la simulación de la consulta de ocupación en Booking/ConsultaOcupacionSimulada.cs. Tiene que implementar IConsultaOcupacion, armar un AsientosOcupadosResponse y traducirlo con MapeosBooking. Para el evento 1 usá los Guid de DatosIniciales.IdEvento y DatosIniciales.IdAsiento, con A2 y C1 retenidas y A3 y B4 confirmadas. Quiero poder simular que Booking no responde desde appsettings.Development.json, sin tocar el código. Si la consulta falla con HttpRequestException o con la FormatException del traductor, devuelve RespuestaOk en falso. Registrala en AddGateways de DependencyInjection.cs.
+
+Segundo, el presenter y su ViewModel en Availability.Presenters, que implemente IOutputPort. El ViewModel no muestra Guids al usuario. Tiene que traer un texto entendible para cada estado, un aviso cuando OcupacionDisponible es falso y un mensaje cuando el evento no existe.
+
+Tercero, el controller y la vista Razor que muestre los asientos agrupados por fila con su estado. Seguí la forma del ejemplo del profesor, donde el controller solo arma el InputDataRequest y llama al puerto de entrada. Availability.Controllers hoy no tiene referencia a ASP.NET Core; si hace falta sumarla, explicame por qué antes.
+
+Por último, el registro en Program.cs, donde el presenter tiene que ser la misma instancia por pedido para el controller y para el interactor, como hizo el profesor con GetRequiredService.
+
+Pasame el código por acá con los comentarios, yo lo escribo en el repo.
