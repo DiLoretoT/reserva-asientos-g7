@@ -21,7 +21,9 @@ prompts/            historial de prompts de cada integrante
 ## Booking: desarrollo local
 
 Con Docker Desktop iniciado, ejecutar desde la raíz `docker compose up -d --wait booking-db`.
-No requiere `.env`: crea PostgreSQL y su esquema con credenciales ficticias de desarrollo.
+No requiere `.env`: crea PostgreSQL con credenciales ficticias de desarrollo. Luego ejecutar
+`dotnet run --project src/Booking/Booking.Api --launch-profile http`; la API aplica las migraciones
+de EF Core en Development. Si la base ya se creó con el SQL anterior, consultar la guía antes de arrancar.
 Ver [configuración, verificaciones manuales y alcance de Booking](docs/booking-postgresql.md).
 
 ## Cómo trabajamos con Git

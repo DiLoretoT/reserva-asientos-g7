@@ -1,7 +1,7 @@
 using Booking.Api;
 using Booking.Business;
 using Booking.Data;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,14 +15,14 @@ builder.Services.AddOptions<BookingOptions>()
 
 var connectionString = builder.Configuration.GetConnectionString("Booking")
     ?? throw new InvalidOperationException("Falta configurar ConnectionStrings:Booking.");
-// Un único pool compartido; cada operación abre y dispone su propia conexión.
-builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
-builder.Services.AddSingleton<BookingDatabase>();
+builder.Services.AddDbContext<BookingDbContext>(options => options.UseNpgsql(connectionString));
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<BookingDbContext>().Database.Migrate();
     app.MapOpenApi();
 }
 
