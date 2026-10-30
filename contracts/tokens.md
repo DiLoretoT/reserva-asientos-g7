@@ -27,23 +27,25 @@ En desarrollo Keycloak corre en HTTP, así que los servicios configuran `Require
 | Llamada | Quién pide el token | Cómo lo pide | Audiencia (`aud`) |
 |---|---|---|---|
 | Usuario → Availability (login) | Availability, en nombre del usuario | OpenID Connect con *authorization code* | — |
-| Availability → Booking (REST) | Client `availability-web` | *Client credentials* | `booking-api` |
-| Booking → Payment (gRPC) | Client `booking-api` | *Client credentials* | `payment-api` |
+| Availability → Booking (REST) | Client `availability-web` | *Client credentials* con `scope=booking-api` | `booking-api` |
+| Booking → Payment (gRPC) | Client `booking-api` | *Client credentials* con `scope=payment-api` | `payment-api` |
 
 El usuario inicia sesión en la página de login de Keycloak, y Availability guarda la sesión en una cookie. El token del usuario no viaja a Booking ni a Payment: las llamadas entre servicios usan siempre el token de servicio del que llama.
+
+La audiencia de cada API se agrega solo cuando el token se pide con su `scope`. Por eso el token de login del usuario no trae `booking-api` en `aud`, y si llegara a Booking, Booking lo rechazaría con `401`.
 
 El client `payment-api` no pide tokens. Existe solo para que Payment tenga una audiencia propia.
 
 ## Cómo se pide un token de servicio
 
-El servicio que llama hace un `POST` al endpoint de tokens con su client id y su client secret.
+El servicio que llama hace un `POST` al endpoint de tokens con su client id, su client secret y el `scope` de la API a la que va a llamar.
 
 ```http
 POST /realms/reserva-asientos/protocol/openid-connect/token
 Host: localhost:8080
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials&client_id=availability-web&client_secret=<secret>
+grant_type=client_credentials&client_id=availability-web&client_secret=<secret>&scope=booking-api
 ```
 
 Respuesta (resumida):
@@ -56,6 +58,7 @@ Respuesta (resumida):
 }
 ```
 
+- Sin `scope`, el token no trae la audiencia de la API y la API lo rechaza con `401`. Cada client solo puede pedir el scope que tiene asignado: si pide otro, Keycloak responde `400 invalid_scope`.
 - El token dura 5 minutos (`expires_in` en segundos).
 - El servicio guarda el token en memoria y lo reusa hasta 30 segundos antes de que venza. Recién ahí pide uno nuevo. Así no pide un token por cada llamada, y nunca manda uno a punto de vencer.
 - El client secret no va en `appsettings.json` ni en el repo. Cada integrante lo guarda con `dotnet user-secrets set "Keycloak:ClientSecret" "<secret>"`, con el mismo valor que tiene en el `.env` de Keycloak.
@@ -124,7 +127,7 @@ El cuerpo de la respuesta `401` no forma parte del contrato. El servicio que lla
 |---|---|
 | Usuario de prueba | `usuario1` / `usuario1` |
 | Panel de Keycloak | `http://localhost:8080`, con el usuario y la clave de `KEYCLOAK_ADMIN_*` del `.env` |
-| Client secrets | En el `.env` de `src/Auth/keycloak/`. Se piden por privado a la pareja de Autorización |
+| Client secrets | Cada integrante genera los suyos en el `.env` de `src/Auth/keycloak/` y usa el mismo valor en los user-secrets del servicio |
 
 ## Temas abiertos
 
