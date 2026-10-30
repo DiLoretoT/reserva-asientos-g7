@@ -18,6 +18,14 @@ prompts/            historial de prompts de cada integrante
 
 `ReservaAsientos.slnx` agrupa todos los proyectos para compilarlos juntos. Cada servicio corre como un proceso independiente. Availability publica las solicitudes de reserva en un broker de mensajes (Azure Service Bus), que se las entrega a Booking. Booking llama a Payment por gRPC, y Availability consulta a Booking por REST.
 
+## Booking: desarrollo local
+
+Con Docker Desktop iniciado, ejecutar desde la raíz `docker compose up -d --wait booking-db`.
+No requiere `.env`: crea PostgreSQL con credenciales ficticias de desarrollo. Luego ejecutar
+`dotnet run --project src/Booking/Booking.Api --launch-profile http`; la API aplica las migraciones
+de EF Core en Development. Si la base ya se creó con el SQL anterior, consultar la guía antes de arrancar.
+Ver [configuración, verificaciones manuales y alcance de Booking](docs/booking-postgresql.md).
+
 ## Cómo trabajamos con Git
 
 ### Ramas

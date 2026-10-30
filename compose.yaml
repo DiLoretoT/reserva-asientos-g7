@@ -1,0 +1,21 @@
+# Desarrollo local académico; estas credenciales no son para producción.
+services:
+  booking-db:
+    image: postgres:17.11
+    environment:
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: test
+    ports:
+      - "127.0.0.1:${BOOKING_DB_PORT:-5433}:5432"
+    volumes:
+      - booking-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U booking -d booking_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  booking-data:
