@@ -1,6 +1,12 @@
 # Keycloak: servidor de autorización del sistema
 # Uso: copiar .env.example a .env y ejecutar `docker compose up -d` en esta carpeta.
 # Panel: http://localhost:8080  ·  Realm: reserva-asientos
+#
+# La base de Keycloak vive dentro del contenedor, sin volumen. Cada vez que el
+# contenedor se crea de nuevo (`docker compose down` y después `up`), importa el
+# realm desde ./realm. Así el JSON es la única fuente de verdad, y un cambio en él
+# le llega a todos. Los cambios hechos a mano en el panel se pierden con `down`:
+# si hay que conservarlos, se exporta el realm.
 
 services:
   keycloak:
@@ -18,9 +24,4 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Base de datos propia de Keycloak (H2). Persiste entre reinicios.
-      - keycloak-data:/opt/keycloak/data
       - ./realm:/opt/keycloak/data/import
-
-volumes:
-  keycloak-data:
