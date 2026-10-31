@@ -14,7 +14,7 @@ El servidor de autorización es Keycloak 26.0.8. Corre en Docker, con su propia 
 
 | Dato | Valor |
 |---|---|
-| Dirección | `http://localhost:8080` |
+| Dirección | `http://localhost:8080`, solo desde la propia PC |
 | Realm | `reserva-asientos` |
 | Emisor (`Authority`) | `http://localhost:8080/realms/reserva-asientos` |
 | Endpoint de tokens | `http://localhost:8080/realms/reserva-asientos/protocol/openid-connect/token` |
@@ -26,7 +26,7 @@ En desarrollo Keycloak corre en HTTP, así que los servicios configuran `Require
 
 | Llamada | Quién pide el token | Cómo lo pide | Audiencia (`aud`) |
 |---|---|---|---|
-| Usuario → Availability (login) | Availability, en nombre del usuario | OpenID Connect con *authorization code* | — |
+| Usuario → Availability (login) | Availability, en nombre del usuario | OpenID Connect con *authorization code*. El usuario entra con usuario y contraseña de Keycloak o con GitHub | — |
 | Availability → Booking (REST) | Client `availability-web` | *Client credentials* con `scope=booking-api` | `booking-api` |
 | Booking → Payment (gRPC) | Client `booking-api` | *Client credentials* con `scope=payment-api` | `payment-api` |
 
@@ -35,6 +35,19 @@ El usuario inicia sesión en la página de login de Keycloak, y Availability gua
 La audiencia de cada API se agrega solo cuando el token se pide con su `scope`. Por eso el token de login del usuario no trae `booking-api` en `aud`, y si llegara a Booking, Booking lo rechazaría con `401`.
 
 El client `payment-api` no pide tokens. Existe solo para que Payment tenga una audiencia propia.
+
+## Proveedor de identidad externo
+
+Keycloak ofrece iniciar sesión con GitHub, que es el proveedor de identidad externo del diagrama. Keycloak hace de intermediario (*identity brokering*):
+
+1. En la página de login de Keycloak, el usuario toca "GitHub".
+2. GitHub le pide iniciar sesión y autorizar la aplicación. Si ya tiene la sesión de GitHub abierta y autorizó antes, no le pide nada.
+3. GitHub lo devuelve a Keycloak. La primera vez, Keycloak le crea un usuario y le pide confirmar sus datos.
+4. Keycloak emite su propio token, igual que para un usuario local.
+
+Para Availability, Booking y Payment no cambia nada: el token siempre lo emite Keycloak, con el mismo emisor (`iss`). Los servicios nunca reciben un token de GitHub. En `preferred_username` viene el usuario de GitHub. El usuario no tiene contraseña en Keycloak.
+
+Cada integrante que levanta Keycloak registra su propia GitHub OAuth App (*Settings → Developer settings → OAuth Apps*) con la *callback URL* `http://localhost:8080/realms/reserva-asientos/broker/github/endpoint`, y pone el Client ID y el secret en `GITHUB_CLIENT_ID` y `GITHUB_CLIENT_SECRET` del `.env`. Para iniciar sesión, en cambio, alcanza con cualquier cuenta de GitHub. Si las variables quedan en `cambiar`, Keycloak arranca igual y solo falla el botón de GitHub.
 
 ## Cómo se pide un token de servicio
 
@@ -126,6 +139,7 @@ El cuerpo de la respuesta `401` no forma parte del contrato. El servicio que lla
 | Dato | Valor |
 |---|---|
 | Usuario de prueba | `usuario1` / `usuario1` |
+| Usuario de GitHub | Cualquier cuenta de GitHub, con el botón "GitHub" del login. Requiere la OAuth App en el `.env` |
 | Panel de Keycloak | `http://localhost:8080`, con el usuario y la clave de `KEYCLOAK_ADMIN_*` del `.env` |
 | Client secrets | Cada integrante genera los suyos en el `.env` de `src/Auth/keycloak/` y usa el mismo valor en los user-secrets del servicio |
 

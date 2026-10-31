@@ -1,12 +1,14 @@
 using Availability.Controllers.Eventos;
+using Availability.Controllers.Solicitudes;
 using Availability.Gateways;
 using Availability.Presenters.ListarAsientosDisponibles;
 using Availability.Presenters.ListarEventos;
+using Availability.Presenters.SolicitarReserva;
 using ListarAsientos = Availability.UseCases.Eventos.ListarAsientosDisponibles;
 using ListarEventos = Availability.UseCases.Eventos.ListarEventos;
+using SolicitarReserva = Availability.UseCases.Solicitudes.SolicitarReserva;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Availability.Controllers.Solicitudes;
 using Availability.Gateways.Booking;
 using Availability.Presenters.ConsultarEstadoSolicitud;
 using ConsultarEstado = Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud;
@@ -70,7 +72,8 @@ builder.Services.AddGateways(
         EndpointToken = $"{keycloak["Authority"]}/protocol/openid-connect/token",
         ClientId = keycloak["ClientId"]!,
         ClientSecret = keycloak["ClientSecret"]!
-    });
+    },
+    builder.Configuration.GetValue<bool>("Broker:SimularSinRespuesta"));
 
 // Cada caso de uso tiene clases con el mismo nombre (Interactor, IInputPort, IOutputPort)
 // en su propio namespace. Los alias ListarAsientos y ListarEventos de los using de arriba
@@ -99,6 +102,12 @@ builder.Services.AddTransient<ConsultarEstado.Interfaces.IInputPort, ConsultarEs
 builder.Services.AddTransient<ConsultarEstadoSolicitudController>();
 builder.Services.AddScoped<ConsultarEstadoSolicitudPresenter>();
 builder.Services.AddScoped<ConsultarEstado.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ConsultarEstadoSolicitudPresenter>());
+// Caso de uso SolicitarReserva (issue #4), con el mismo registro que los anteriores y el
+// alias SolicitarReserva.
+builder.Services.AddTransient<SolicitarReserva.Interfaces.IInputPort, SolicitarReserva.Interactor>();
+builder.Services.AddTransient<SolicitarReservaController>();
+builder.Services.AddScoped<SolicitarReservaPresenter>();
+builder.Services.AddScoped<SolicitarReserva.Interfaces.IOutputPort>(sp => sp.GetRequiredService<SolicitarReservaPresenter>());
 
 var app = builder.Build();
 
