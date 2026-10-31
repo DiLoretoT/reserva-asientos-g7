@@ -4,11 +4,54 @@ using Availability.Presenters.ListarAsientosDisponibles;
 using Availability.Presenters.ListarEventos;
 using ListarAsientos = Availability.UseCases.Eventos.ListarAsientosDisponibles;
 using ListarEventos = Availability.UseCases.Eventos.ListarEventos;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Inicio de sesión con Keycloak (issue #6). Va en Availability.Web, el anillo 4, porque 
+// la cookie y OpenID Connect son mecanismos de ASP.NET Core. Ningún caso de uso sabe 
+// cómo se autentica el usuario.
+// Hay dos esquemas. Uno es que la cookie guarda la sesión ya iniciada, así Availability 
+// no consulta a Keycloak en cada pedido. Y el otro es OpenID Connect que actúa solo 
+// cuando hay que iniciar sesión, llevando al usuario a la página de login de Keycloak y,
+// con el authorization code que vuelve, pide los tokens y arma la cookie.
+var keycloak = builder.Configuration.GetSection("Keycloak");
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    })
+    .AddCookie()
+    .AddOpenIdConnect(options =>
+    {
+        options.Authority = keycloak["Authority"];
+        options.ClientId = keycloak["ClientId"];
+        // El secret sale de User Secrets, como pide el contrato de tokens.
+        options.ClientSecret = keycloak["ClientSecret"];
+        options.ResponseType = "code";
+
+        // En desarrollo Keycloak corre en HTTP (contracts/tokens.md).
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+        // Guarda el id_token en la cookie. Al cerrar sesión se manda a Keycloak como
+        // id_token_hint, que Keycloak pide para volver al sitio sin una pantalla de confirmación.
+        options.SaveTokens = true;
+        // Pide los datos del usuario al endpoint userinfo de Keycloak, que informa
+        // preferred_username aunque el id_token no lo traiga.
+        options.GetClaimsFromUserInfoEndpoint = true;
+
+        // Deja los claims con los nombres de Keycloak (preferred_username, sub) en lugar de
+        // traducirlos a los nombres largos de Microsoft. preferred_username pasa a ser
+        // User.Identity.Name, que es lo que muestra el layout ("usuario1").
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters.NameClaimType = "preferred_username";
+    });
 
 // Base de datos propia de Availability (SQLite), sus repositorios y la consulta de
 // ocupación a Booking. Booking:SimularSinRespuesta vale false si no está definido.
@@ -56,8 +99,11 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// UseAuthentication lee la cookie y arma el usuario antes de que UseAuthorization decida si
+// el pedido pasa. Sin cookie el usuario queda anónimo, y las páginas sin [Authorize]
+// (eventos y asientos) se ven igual.
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapStaticAssets();
 
 // La página de inicio es la lista de eventos, por eso el controller por defecto es Eventos.
