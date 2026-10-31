@@ -13,7 +13,7 @@ var app = builder.Build();
 
 app.MapGrpcService<PaymentGrpcService>();
 app.MapGet("/", () => "Payment gRPC service");
-app.MapGet("/test-payment", async (string bookingId, decimal amount, PaymentService service) =>
+app.MapGet("/payment-test", async (string bookingId, decimal amount, PaymentService service) =>
 {
     var result = await service.ProcessPayment(
         new ProcessPaymentRequest
