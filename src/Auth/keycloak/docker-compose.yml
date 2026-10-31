@@ -21,7 +21,10 @@ services:
       # El realm exportado los lee como ${...} al importarse: así no quedan en el repo.
       AVAILABILITY_WEB_CLIENT_SECRET: ${AVAILABILITY_WEB_CLIENT_SECRET}
       BOOKING_API_CLIENT_SECRET: ${BOOKING_API_CLIENT_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
     ports:
-      - "8080:8080"
+      # Solo acepta conexiones desde esta PC: así nadie de la misma red llega al panel.
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./realm:/opt/keycloak/data/import
