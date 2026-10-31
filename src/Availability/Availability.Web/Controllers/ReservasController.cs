@@ -70,7 +70,7 @@ namespace Availability.Web.Controllers
             // TempData guarda datos solo hasta el siguiente pedido, justo lo que hace falta
             // para mostrar el asiento en la página a la que se redirige.
             TempData[ClaveAsiento] = viewModel.AsientoTexto;
-            TempData[ClaveEvento] = viewModel.EventoId.ToString();
+            TempData[ClaveEvento] = viewModel.EventoId;
 
             return RedirectToAction(nameof(Recibida), new { id = viewModel.SolicitudId });
         }
@@ -81,7 +81,10 @@ namespace Availability.Web.Controllers
         public IActionResult Recibida(Guid id)
         {
             string? asiento = TempData[ClaveAsiento] as string;
-            Guid? eventoId = Guid.TryParse(TempData[ClaveEvento] as string, out Guid evento) ? evento : null;
+
+            // El serializador de TempData devuelve el Guid como Guid, no como texto, así que
+            // se lee con "is Guid".
+            Guid? eventoId = TempData[ClaveEvento] is Guid evento ? evento : null;
 
             return View(new SolicitudRecibidaViewModel(id, asiento, eventoId));
         }
