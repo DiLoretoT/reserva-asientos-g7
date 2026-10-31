@@ -1,6 +1,7 @@
 using Availability.Gateways.Persistencia;
 using Availability.Gateways.Persistencia.Repositorios;
 using Availability.Gateways.Booking;
+using Availability.Gateways.Broker;
 using Availability.UseCases.Interfaces;
 using Microsoft.Extensions.Logging;
 using Availability.UseCases.Eventos;
@@ -21,7 +22,8 @@ namespace Availability.Gateways
         public static IServiceCollection AddGateways(
             this IServiceCollection services,
             string connectionString,
-            bool simularBookingSinRespuesta)
+            bool simularBookingSinRespuesta,
+            bool simularBrokerSinRespuesta)
         {
             services.AddDbContext<AvailabilityDbContext>(options =>
                 options.UseSqlite(connectionString));
@@ -40,6 +42,15 @@ namespace Availability.Gateways
             services.AddSingleton<IConsultaOcupacion>(sp => new ConsultaOcupacionSimulada(
                 simularBookingSinRespuesta,
                 sp.GetRequiredService<ILogger<ConsultaOcupacionSimulada>>()));
+
+            // Mientras no tengamos el connection string del broker, IPublicadorSolicitudes se
+            // resuelve con la simulación. Cuando lo tengamos, esta línea se reemplaza por el
+            // registro del publicador de Azure Service Bus y el caso de uso no cambia.
+            // Singleton por el mismo motivo que la consulta a Booking: no guarda datos de
+            // ningún pedido.
+            services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesSimulado(
+                simularBrokerSinRespuesta,
+                sp.GetRequiredService<ILogger<PublicadorSolicitudesSimulado>>()));
 
             return services;
         }

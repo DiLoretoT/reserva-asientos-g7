@@ -63,7 +63,8 @@
                                         aria-disabled="@(asiento.Seleccionable ? null : "true")"
                                         data-seleccionable="@(asiento.Seleccionable ? "true" : "false")"
                                         data-etiqueta="@asiento.Etiqueta"
-                                        data-descripcion="@asiento.Descripcion">
+                                        data-descripcion="@asiento.Descripcion"
+                                        data-asiento-id="@asiento.Id">
                                     @asiento.Numero
                                 </button>
                             </li>
@@ -83,18 +84,44 @@
     </ul>
 </section>
 
-<div class="resumen">
-    <div>
-        @* aria-live hace que el lector de pantalla anuncie el cambio cuando se elige un
-           asiento, sin mover el foco. *@
-        <p class="resumen__texto" aria-live="polite" data-resumen-texto>Elegí un asiento disponible en el mapa.</p>
-        <p class="resumen__nota">La reserva se habilita en la próxima versión del sitio.</p>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @* Formulario de reserva (issue #4). El tag helper del form agrega el token
+       antifalsificación que valida ReservasController. El asiento elegido lo completa
+       mapa-asientos.js en el campo oculto; Reservar arranca deshabilitado hasta que se elige
+       uno. Cada solicitud reserva un solo asiento, según el contrato con Booking. *@
+    <form class="resumen" method="post" asp-controller="Reservas" asp-action="Solicitar" data-form-reserva>
+        <input type="hidden" name="eventoId" value="@Model.EventoId" />
+        <input type="hidden" name="asientoId" value="" data-asiento-elegido />
+        <div>
+            @* aria-live hace que el lector de pantalla anuncie el cambio cuando se elige un
+               asiento, sin mover el foco. *@
+            <p class="resumen__texto" aria-live="polite" data-resumen-texto>Elegí un asiento disponible en el mapa.</p>
+        </div>
+        <div class="resumen__acciones">
+            <button type="button" class="boton boton--texto" data-resumen-quitar hidden>Quitar selección</button>
+            <button type="submit" class="boton" disabled data-boton-reservar>Reservar</button>
+        </div>
+    </form>
+}
+else
+{
+    @* Sin sesión se puede elegir un asiento para ver su estado, pero para reservar hay que
+       iniciar sesión antes. Se pide acá y no al enviar el formulario porque, después del
+       login de Keycloak, el navegador no puede repetir un POST y la reserva se perdería. El
+       enlace vuelve a este mismo mapa. *@
+    <div class="resumen">
+        <div>
+            <p class="resumen__texto" aria-live="polite" data-resumen-texto>Elegí un asiento disponible en el mapa.</p>
+            <p class="resumen__nota">Para reservar tenés que iniciar sesión.</p>
+        </div>
+        <div class="resumen__acciones">
+            <button type="button" class="boton boton--texto" data-resumen-quitar hidden>Quitar selección</button>
+            <a class="boton" asp-controller="Cuenta" asp-action="IniciarSesion"
+               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Iniciar sesión para reservar</a>
+        </div>
     </div>
-    <div class="resumen__acciones">
-        <button type="button" class="boton boton--texto" data-resumen-quitar hidden>Quitar selección</button>
-        <button type="button" class="boton" disabled>Reservar</button>
-    </div>
-</div>
+}
 
 @section Scripts {
     <script src="~/js/mapa-asientos.js" asp-append-version="true"></script>
