@@ -211,6 +211,24 @@ a:hover {
   opacity: 0.75;
 }
 
+/* Inicio y cierre de sesión, a la derecha del encabezado. */
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  font-size: 0.875rem;
+}
+
+.sesion__usuario {
+  color: var(--texto-secundario);
+}
+
+.sesion .boton {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+}
+
 .pie {
   padding: 2rem 0;
   border-top: 1px solid var(--borde);
