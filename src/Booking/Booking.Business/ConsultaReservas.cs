@@ -4,13 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Booking.Business;
 
-// Solo lee reservas: no crea ni modifica nada. Las dos consultas aplican el mismo criterio del
-// contrato: una reserva retenida solo cuenta mientras su vencimiento no llegó, y esa hora se
-// compara con la de la base de datos (DateTime.UtcNow dentro de la consulta se traduce a now() en SQL).
+// Capa de negocio de Booking (N-Layer). Tiene las reglas de las dos consultas y es la única que define cuándo un
+// asiento está ocupado: confirmado, o retenido con el vencimiento todavía sin llegar. Usa el DbContext directo, 
+// porque EF Core ya es la capa de datos y otra capa encima solo duplicaría código. Lo recibe
+// por el constructor para no depender de cómo se crea la conexión. Solo lee, por eso usa AsNoTracking.
+// El vencimiento se compara con la hora de la base de datos (UtcNow dentro de la consulta se traduce a now() en
+// SQL), así no depende del reloj de cada réplica.
 public class ConsultaReservas(BookingDbContext db)
 {
-    // Devuelve los asientos del evento que tienen una reserva confirmada o una retenida todavía vigente.
-    // Si no hay ninguno, la lista viene vacía.
+    // Devuelve los asientos ocupados del evento. Solo informa los ocupados porque Booking no sabe qué asientos
+    // existen, que resta y calcula los libres. Sin ocupados devuelve una lista vacía.
     public async Task<List<AsientoOcupado>> ObtenerAsientosOcupadosAsync(Guid eventoId)
     {
         return await db.Reservas
@@ -22,10 +25,10 @@ public class ConsultaReservas(BookingDbContext db)
             .ToListAsync();
     }
 
-    // Busca la reserva creada a partir de la solicitud y devuelve su estado y, si fue rechazada, el motivo.
-    // Devuelve null si Booking todavía no procesó la solicitud.
+    // Devuelve el estado de la solicitud y el motivo si fue rechazada, o null si Booking todavía no la procesó.
     public async Task<EstadoSolicitud?> ObtenerEstadoSolicitudAsync(Guid solicitudId)
     {
+        // Se calcula "vencida" dentro de la consulta para que use la hora de la base.
         var reserva = await db.Reservas
             .AsNoTracking()
             .Where(r => r.SolicitudId == solicitudId)
@@ -34,7 +37,7 @@ public class ConsultaReservas(BookingDbContext db)
                 r.AsientoId,
                 r.Estado,
                 r.Motivo,
-                // Retenida con vencimiento cumplido: se informa vencida aunque el proceso que la marca no haya corrido.
+                // Una retenida que ya venció se informa como vencida aunque el proceso de vencimiento no haya corrido.
                 Vencida = r.Estado == EstadoReserva.Retenida && r.FechaVencimiento <= DateTime.UtcNow
             })
             .FirstOrDefaultAsync();
