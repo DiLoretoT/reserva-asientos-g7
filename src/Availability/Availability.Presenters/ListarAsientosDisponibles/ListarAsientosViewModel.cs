@@ -7,14 +7,16 @@ namespace Availability.Presenters.ListarAsientosDisponibles
     // ViewModel de la página de asientos de un evento. El presenter lo arma a partir del
     // OutputDataResponse y la vista solo lo recorre, así los textos, los colores, el formato
     // de la fecha y la agrupación por fila se deciden en el anillo 3 y no en Razor.
-    // No incluye ningún Guid porque el visitante identifica un asiento por fila y número.
-    // El Id del asiento va a volver como dato oculto del formulario cuando exista el caso de
-    // uso de reservar.
+    // El visitante identifica un asiento por fila y número, y esos son los únicos datos que
+    // se le muestran. Los Id del evento y de cada asiento viajan como datos ocultos del
+    // formulario de reserva (issue #4), porque es lo que necesita el caso de uso
+    // SolicitarReserva para registrar la solicitud.
     public class ListarAsientosViewModel
     {
         public ListarAsientosViewModel(OutputDataResponse response)
         {
             EventoEncontrado = response.EventoEncontrado;
+            EventoId = response.EventoId;
 
             if (!response.EventoEncontrado)
             {
@@ -48,6 +50,9 @@ namespace Availability.Presenters.ListarAsientosDisponibles
         }
 
         public bool EventoEncontrado { get; internal set; }
+
+        // Dato oculto del formulario de reserva.
+        public Guid EventoId { get; internal set; }
 
         public string? MensajeEventoNoEncontrado { get; internal set; }
 
@@ -85,6 +90,7 @@ namespace Availability.Presenters.ListarAsientosDisponibles
     {
         public AsientoViewModel(AsientoDelEvento asiento)
         {
+            Id = asiento.Id;
             Etiqueta = $"{asiento.Fila}{asiento.Numero}";
             Numero = asiento.Numero.ToString();
             (EstadoTexto, ClaseCss) = Presentacion(asiento.Estado);
@@ -94,6 +100,10 @@ namespace Availability.Presenters.ListarAsientosDisponibles
             // lectores de pantalla y el que aparece al pasar el mouse o al enfocar el asiento.
             Descripcion = $"Fila {asiento.Fila}, asiento {asiento.Numero}: {EstadoTexto.ToLowerInvariant()}";
         }
+
+        // No se muestra: la vista lo deja en el botón del asiento para que, al elegirlo, el
+        // formulario de reserva envíe qué asiento se pidió.
+        public Guid Id { get; internal set; }
 
         // Fila y número juntos, como figura el asiento en una entrada, por ejemplo A2.
         public string Etiqueta { get; internal set; }

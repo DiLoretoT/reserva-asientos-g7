@@ -1,9 +1,12 @@
 using Availability.Controllers.Eventos;
+using Availability.Controllers.Solicitudes;
 using Availability.Gateways;
 using Availability.Presenters.ListarAsientosDisponibles;
 using Availability.Presenters.ListarEventos;
+using Availability.Presenters.SolicitarReserva;
 using ListarAsientos = Availability.UseCases.Eventos.ListarAsientosDisponibles;
 using ListarEventos = Availability.UseCases.Eventos.ListarEventos;
+using SolicitarReserva = Availability.UseCases.Solicitudes.SolicitarReserva;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
@@ -53,11 +56,13 @@ builder.Services
         options.TokenValidationParameters.NameClaimType = "preferred_username";
     });
 
-// Base de datos propia de Availability (SQLite), sus repositorios y la consulta de
-// ocupación a Booking. Booking:SimularSinRespuesta vale false si no está definido.
+// Base de datos propia de Availability (SQLite), sus repositorios, la consulta de
+// ocupación a Booking y la publicación en el broker. Booking:SimularSinRespuesta y
+// Broker:SimularSinRespuesta valen false si no están definidos.
 builder.Services.AddGateways(
     builder.Configuration.GetConnectionString("Availability")!,
-    builder.Configuration.GetValue<bool>("Booking:SimularSinRespuesta"));
+    builder.Configuration.GetValue<bool>("Booking:SimularSinRespuesta"),
+    builder.Configuration.GetValue<bool>("Broker:SimularSinRespuesta"));
 
 // Cada caso de uso tiene clases con el mismo nombre (Interactor, IInputPort, IOutputPort)
 // en su propio namespace. Los alias ListarAsientos y ListarEventos de los using de arriba
@@ -79,6 +84,13 @@ builder.Services.AddTransient<ListarEventos.Interfaces.IInputPort, ListarEventos
 builder.Services.AddTransient<ListarEventosController>();
 builder.Services.AddScoped<ListarEventosPresenter>();
 builder.Services.AddScoped<ListarEventos.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ListarEventosPresenter>());
+
+// Caso de uso SolicitarReserva (issue #4), con el mismo registro que los anteriores y el
+// alias SolicitarReserva.
+builder.Services.AddTransient<SolicitarReserva.Interfaces.IInputPort, SolicitarReserva.Interactor>();
+builder.Services.AddTransient<SolicitarReservaController>();
+builder.Services.AddScoped<SolicitarReservaPresenter>();
+builder.Services.AddScoped<SolicitarReserva.Interfaces.IOutputPort>(sp => sp.GetRequiredService<SolicitarReservaPresenter>());
 
 var app = builder.Build();
 

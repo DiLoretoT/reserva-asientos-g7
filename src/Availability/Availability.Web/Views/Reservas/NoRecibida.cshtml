@@ -1,0 +1,23 @@
+@* Resultado de una solicitud que no se registró: el asiento no existe o el broker no
+   respondió. Los textos y si conviene reintentar vienen decididos por el presenter. *@
+@model Availability.Presenters.SolicitarReserva.SolicitarReservaViewModel
+
+@{
+    ViewData["Title"] = Model.Titulo;
+}
+
+<div class="estado-vacio">
+    <h1 class="estado-vacio__titulo">@Model.Titulo</h1>
+
+    @if (Model.AsientoTexto is not null)
+    {
+        <p>@Model.AsientoTexto</p>
+    }
+
+    @* role="alert" porque es un error que el usuario tiene que conocer para decidir qué hacer. *@
+    <p role="alert">@Model.Mensaje</p>
+
+    <a class="boton" asp-controller="Eventos" asp-action="Asientos" asp-route-id="@Model.EventoId">
+        @(Model.PuedeReintentar ? "Volver a intentar" : "Volver al mapa")
+    </a>
+</div>

@@ -4,7 +4,10 @@
 // Qué asiento se puede elegir no se decide acá: lo marca el presenter con
 // data-seleccionable. Este archivo solo refleja la elección en pantalla. Se elige un solo
 // asiento porque, según el contrato con Booking, cada solicitud reserva un solo asiento.
-// Todavía no envía nada; la solicitud de reserva es el issue #4.
+//
+// Si el usuario inició sesión, la página trae el formulario de reserva (issue #4): al
+// elegir un asiento, este archivo completa su Id en el campo oculto y habilita Reservar. Sin
+// sesión no hay formulario, y la selección solo sirve para ver el estado del asiento.
 (function () {
     "use strict";
 
@@ -16,7 +19,24 @@
     const textoResumen = document.querySelector("[data-resumen-texto]");
     const botonQuitar = document.querySelector("[data-resumen-quitar]");
     const textoInicial = textoResumen.textContent;
+
+    // Solo existen si el usuario inició sesión.
+    const formulario = document.querySelector("[data-form-reserva]");
+    const campoAsiento = document.querySelector("[data-asiento-elegido]");
+    const botonReservar = document.querySelector("[data-boton-reservar]");
+
     let seleccionado = null;
+
+    // Refleja el asiento elegido en el formulario: el Id va en el campo oculto y Reservar
+    // queda habilitado solo si hay un asiento elegido.
+    function actualizarFormulario() {
+        if (!formulario) {
+            return;
+        }
+
+        campoAsiento.value = seleccionado ? seleccionado.dataset.asientoId : "";
+        botonReservar.disabled = !seleccionado;
+    }
 
     function seleccionar(asiento) {
         if (seleccionado) {
@@ -27,6 +47,7 @@
         asiento.setAttribute("aria-pressed", "true");
         textoResumen.textContent = "Elegiste el asiento " + asiento.dataset.etiqueta + ".";
         botonQuitar.hidden = false;
+        actualizarFormulario();
     }
 
     function quitarSeleccion() {
@@ -38,6 +59,7 @@
         seleccionado = null;
         textoResumen.textContent = textoInicial;
         botonQuitar.hidden = true;
+        actualizarFormulario();
     }
 
     // Un solo manejador para toda la sala en lugar de uno por asiento: con cientos de
@@ -63,4 +85,19 @@
     });
 
     botonQuitar.addEventListener("click", quitarSeleccion);
+
+    if (formulario) {
+        formulario.addEventListener("submit", function (evento) {
+            // Sin asiento elegido no se envía nada, por si el botón se habilitó de otra forma.
+            if (!campoAsiento.value) {
+                evento.preventDefault();
+                return;
+            }
+
+            // Se deshabilita Reservar al enviar para que un doble clic no mande dos
+            // solicitudes del mismo asiento.
+            botonReservar.disabled = true;
+            textoResumen.textContent = "Enviando tu solicitud del asiento " + seleccionado.dataset.etiqueta + "…";
+        });
+    }
 })();
