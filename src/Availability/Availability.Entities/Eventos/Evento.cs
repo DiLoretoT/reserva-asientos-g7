@@ -1,3 +1,4 @@
+// Tomás Di Loreto
 namespace Availability.Entities.Eventos
 {
     // Entidad de dominio: un evento con asientos para reservar. El dominio es

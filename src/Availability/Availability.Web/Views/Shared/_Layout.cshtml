@@ -1,50 +1,65 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@* Layout común del sitio. Reemplaza el de la plantilla MVC: no carga Bootstrap ni jQuery,
+   porque el sitio usa solo el CSS de wwwroot/css/site.css y JavaScript sin librerías, así no
+   depende de archivos de terceros. Las pantallas de reserva y seguimiento (issues #4 y #5)
+   lo reusan y agregan su propio JavaScript con la sección "Scripts". *@
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Availability.Web</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @* Avisa al navegador que el sitio tiene modo claro y oscuro, así las barras de
+       desplazamiento y los controles nativos siguen el modo del sistema. *@
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <title>@(ViewData["Title"] is string titulo ? $"{titulo} | Reserva de asientos" : "Reserva de asientos")</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Availability.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Availability.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+    @* Permite saltar el encabezado con el teclado y llegar directo al contenido. *@
+    <a class="saltar-al-contenido" href="#contenido">Saltar al contenido</a>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Availability.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <header class="encabezado">
+        <div class="contenedor encabezado__interior">
+            <a class="marca" asp-controller="Eventos" asp-action="Index">Reserva de asientos</a>
+
+            @* La sesión es opcional en todo el sitio, porque eventos y asientos se ven sin
+               iniciarla (paso 1 del enunciado). El encabezado solo ofrece entrar o salir. *@
+            <div class="sesion">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @* User.Identity.Name es el preferred_username de Keycloak, según la
+                       configuración de Program.cs. *@
+                    <span class="sesion__usuario">@User.Identity.Name</span>
+
+                    @* Cerrar sesión va por POST. El tag helper del form agrega el token
+                       antifalsificación que valida CuentaController. *@
+                    <form method="post" asp-controller="Cuenta" asp-action="CerrarSesion">
+                        <button type="submit" class="boton boton--texto">Cerrar sesión</button>
+                    </form>
+                }
+                else
+                {
+                    @* Manda la página actual como returnUrl, así después del login el usuario
+                       vuelve a donde estaba, por ejemplo al mapa de asientos de un evento. *@
+                    <a class="boton boton--texto" asp-controller="Cuenta" asp-action="IniciarSesion"
+                       asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Iniciar sesión</a>
+                }
+            </div>
+        </div>
+    </header>
+
+
+    <main id="contenido" class="contenedor contenido">
+        @RenderBody()
+    </main>
+
+    <footer class="pie">
+        <div class="contenedor">
+            Trabajo práctico de Programación IV, UTN, Grupo 7.
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

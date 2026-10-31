@@ -7,11 +7,21 @@
     <ProjectReference Include="..\..\Shared\Shared.Observability\Shared.Observability.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>6f9177c0-1080-4a2d-9bbb-c7262ca1234b</UserSecretsId>
+    <!-- Identifica la carpeta de User Secrets de este proyecto, que está fuera del repo,
+         en %APPDATA%\Microsoft\UserSecrets\<id>\secrets.json. El id no es secreto. -->
+    <UserSecretsId>d596dec0-5238-45b6-b272-5003ffdeebf1</UserSecretsId>
   </PropertyGroup>
 
 </Project>
