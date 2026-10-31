@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\Availability.Controllers\Availability.Controllers.csproj" />
@@ -11,6 +11,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>6f9177c0-1080-4a2d-9bbb-c7262ca1234b</UserSecretsId>
   </PropertyGroup>
 
 </Project>

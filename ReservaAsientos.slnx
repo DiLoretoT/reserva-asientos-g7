@@ -22,4 +22,8 @@
   <Folder Name="/Shared/">
     <Project Path="src/Shared/Shared.Observability/Shared.Observability.csproj" />
   </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Shared.Auth/Shared.Auth.csproj" />
+  </Folder>
 </Solution>
