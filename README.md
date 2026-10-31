@@ -63,3 +63,4 @@ Cada integrante guarda en `prompts/nombre-apellido.md` el historial de instrucci
 ## Secretos
 
 El connection string del broker y cualquier otra clave no se suben al repositorio. Cada uno los guarda en su máquina, fuera de los archivos versionados.
+

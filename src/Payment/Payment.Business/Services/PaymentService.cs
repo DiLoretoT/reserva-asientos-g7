@@ -36,7 +36,8 @@ namespace Payment.Business.Services
                 {
                     BookingId = payment.BookingId,
                     Amount = payment.Amount,
-                    PaymentStatus = paymentResult.PaymentStatus
+                    PaymentStatus = paymentResult.PaymentStatus,
+                    Reason = paymentResult.Reason
                 };
 
             }

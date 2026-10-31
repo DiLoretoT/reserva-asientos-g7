@@ -7,19 +7,31 @@ namespace Payment.Data.Processing
 {
         public class SimulatedPaymentProcess : IPaymentProcessor
         {
+            private const decimal MaxAmount = 10000m; // Monto máximo permitido para aprobar el pago
             public Task<ProcessPaymentResult> ProcessPayment(ProcessPaymentRequest request)
             {
-                // Simulación: aprueba si el monto es razonable, rechaza si no
-                var status = request.Amount > 0 && request.Amount <= 10000
-                    ? PaymentStatus.Approved
-                    : PaymentStatus.Rejected;
+                var (status, reason) = Evaluate(request.Amount);
 
                 return Task.FromResult(new ProcessPaymentResult
                 {
                     BookingId = request.BookingId,
                     Amount = request.Amount,
-                    PaymentStatus = status
+                    PaymentStatus = status,
+                    Reason = reason
                 });
+
+        }
+            private static (PaymentStatus status, string? reason) Evaluate(decimal amount)
+            {
+                if (amount <= 0)
+                {
+                return (PaymentStatus.Rejected, "Monto invalido");
+                }
+                if (amount > MaxAmount)
+                {
+                    return (PaymentStatus.Rejected, "Monto excede el límite permitido");
+                }
+                return (PaymentStatus.Approved, "Pago aprobado con exito");
             }
         }
 }

@@ -17,4 +17,5 @@ message ProcessPaymentReply {
   string booking_id = 1;
   double amount = 2;
   string payment_status = 3;
+  string reason = 4;
 }

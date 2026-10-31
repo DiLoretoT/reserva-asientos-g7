@@ -22,7 +22,8 @@ namespace Payment.Grpc.Services
             {
                 BookingId = result.BookingId,
                 Amount = (double)result.Amount,
-                PaymentStatus = result.PaymentStatus.ToString()
+                PaymentStatus = result.PaymentStatus.ToString(),
+                Reason = result.Reason ?? string.Empty
             };
         }
     }

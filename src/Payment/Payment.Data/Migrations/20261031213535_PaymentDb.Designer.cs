@@ -11,7 +11,7 @@ using Payment.Data.Persistence;
 namespace Payment.Data.Migrations
 {
     [DbContext(typeof(PaymentDbContext))]
-    [Migration("20261031181259_PaymentDb")]
+    [Migration("20261031213535_PaymentDb")]
     partial class PaymentDb
     {
         /// <inheritdoc />
