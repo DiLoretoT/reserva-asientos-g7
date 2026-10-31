@@ -6,6 +6,10 @@ using ListarAsientos = Availability.UseCases.Eventos.ListarAsientosDisponibles;
 using ListarEventos = Availability.UseCases.Eventos.ListarEventos;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Availability.Controllers.Solicitudes;
+using Availability.Gateways.Booking;
+using Availability.Presenters.ConsultarEstadoSolicitud;
+using ConsultarEstado = Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,11 +57,20 @@ builder.Services
         options.TokenValidationParameters.NameClaimType = "preferred_username";
     });
 
-// Base de datos propia de Availability (SQLite), sus repositorios y la consulta de
-// ocupación a Booking. Booking:SimularSinRespuesta vale false si no está definido.
+// Base de datos propia de Availability, sus repositorios y el cliente HTTP de Booking. 
+// Las llamadas a Booking usan el token de servicio de availability-web, el mismo
+// client de Keycloak que el inicio de sesión, así que reusan su ClientId y su ClientSecret.
+// El endpoint de tokens sale del Authority, como indica contracts/tokens.md.
 builder.Services.AddGateways(
     builder.Configuration.GetConnectionString("Availability")!,
-    builder.Configuration.GetValue<bool>("Booking:SimularSinRespuesta"));
+    new OpcionesBooking
+    {
+        BaseUrl = builder.Configuration["Booking:BaseUrl"]!,
+        Scope = builder.Configuration["Booking:Scope"]!,
+        EndpointToken = $"{keycloak["Authority"]}/protocol/openid-connect/token",
+        ClientId = keycloak["ClientId"]!,
+        ClientSecret = keycloak["ClientSecret"]!
+    });
 
 // Cada caso de uso tiene clases con el mismo nombre (Interactor, IInputPort, IOutputPort)
 // en su propio namespace. Los alias ListarAsientos y ListarEventos de los using de arriba
@@ -79,6 +92,13 @@ builder.Services.AddTransient<ListarEventos.Interfaces.IInputPort, ListarEventos
 builder.Services.AddTransient<ListarEventosController>();
 builder.Services.AddScoped<ListarEventosPresenter>();
 builder.Services.AddScoped<ListarEventos.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ListarEventosPresenter>());
+
+
+// Caso de uso ConsultarEstadoSolicitud.
+builder.Services.AddTransient<ConsultarEstado.Interfaces.IInputPort, ConsultarEstado.Interactor>();
+builder.Services.AddTransient<ConsultarEstadoSolicitudController>();
+builder.Services.AddScoped<ConsultarEstadoSolicitudPresenter>();
+builder.Services.AddScoped<ConsultarEstado.Interfaces.IOutputPort>(sp => sp.GetRequiredService<ConsultarEstadoSolicitudPresenter>());
 
 var app = builder.Build();
 

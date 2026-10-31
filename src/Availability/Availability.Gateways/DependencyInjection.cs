@@ -2,7 +2,6 @@ using Availability.Gateways.Persistencia;
 using Availability.Gateways.Persistencia.Repositorios;
 using Availability.Gateways.Booking;
 using Availability.UseCases.Interfaces;
-using Microsoft.Extensions.Logging;
 using Availability.UseCases.Eventos;
 using Availability.UseCases.Solicitudes;
 using Microsoft.EntityFrameworkCore;
@@ -11,17 +10,21 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Availability.Gateways
 {
     // Registro de los adaptadores de Gateways en la inyección de dependencias.
-    //
     // Cada proyecto expone su propio método de extensión, así Program.cs solo agrega una
     // línea por proyecto y los integrantes no se pisan editando el mismo archivo. Además,
     // Program.cs no necesita conocer las clases concretas (EventoRepository, el
-    // DbContext): solo sabe que existe AddGateways.
+    // DbContext). Solo sabe que existe AddGateways.
     public static class DependencyInjection
     {
+        // Tiempo máximo de espera de cada llamada a Booking y a Keycloak. HttpClient espera
+        // 100 segundos por defecto; con un servicio caído, la página quedaría colgada ese
+        // tiempo antes de mostrar el aviso.
+        private static readonly TimeSpan TiempoDeEspera = TimeSpan.FromSeconds(5);
+
         public static IServiceCollection AddGateways(
             this IServiceCollection services,
             string connectionString,
-            bool simularBookingSinRespuesta)
+            OpcionesBooking opcionesBooking)
         {
             services.AddDbContext<AvailabilityDbContext>(options =>
                 options.UseSqlite(connectionString));
@@ -31,15 +34,30 @@ namespace Availability.Gateways
             services.AddScoped<IEventoRepository, EventoRepository>();
             services.AddScoped<ISolicitudRepository, SolicitudRepository>();
 
-            // Mientras Booking no tenga su API, IConsultaOcupacion se resuelve con la
-            // simulación. Cuando exista, esta línea se reemplaza por el registro del cliente
-            // HTTP y el resto del servicio no cambia.
-            // Es Singleton, una sola instancia para toda la aplicación, porque no guarda datos
-            // de ningún pedido. La opción de simular la falla llega desde Program.cs, igual
-            // que el connection string, para que Gateways no lea la configuración por su cuenta.
-            services.AddSingleton<IConsultaOcupacion>(sp => new ConsultaOcupacionSimulada(
-                simularBookingSinRespuesta,
-                sp.GetRequiredService<ILogger<ConsultaOcupacionSimulada>>()));
+            // Token de servicio de availability-web. TokenServicio es Singleton para que el
+            // token guardado en memoria se comparta entre pedidos. El handler es Transient
+            // porque la fábrica de HttpClient arma uno nuevo cada vez que renueva la cadena
+            // de handlers.
+            services.AddSingleton(opcionesBooking);
+            services.AddHttpClient(TokenServicio.NombreCliente, http => http.Timeout = TiempoDeEspera);
+            services.AddSingleton<TokenServicio>();
+            services.AddTransient<TokenServicioHandler>();
+
+            // Cliente HTTP de Booking. AddHttpClient lo registra con un HttpClient que sale de
+            // IHttpClientFactory, la fábrica de .NET que reutiliza las conexiones en lugar de
+            // abrir una nueva en cada pedido. Cada llamada pasa por TokenServicioHandler, que
+            // agrega el token.
+            services.AddHttpClient<ClienteBooking>(http =>
+                {
+                    http.BaseAddress = new Uri(opcionesBooking.BaseUrl);
+                    http.Timeout = TiempoDeEspera;
+                })
+                .AddHttpMessageHandler<TokenServicioHandler>();
+
+            // Los dos puertos hacia Booking se resuelven con la misma clase. Quien pide
+            // IConsultaOcupacion o IConsultaEstadoSolicitud recibe un ClienteBooking.
+            services.AddTransient<IConsultaOcupacion>(sp => sp.GetRequiredService<ClienteBooking>());
+            services.AddTransient<IConsultaEstadoSolicitud>(sp => sp.GetRequiredService<ClienteBooking>());
 
             return services;
         }
