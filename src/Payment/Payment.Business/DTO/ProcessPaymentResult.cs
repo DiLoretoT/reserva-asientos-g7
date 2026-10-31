@@ -4,8 +4,9 @@ namespace Payment.Business.DTO
 {
     public class ProcessPaymentResult
     {
-        public string BookingId { get; set; } = string.Empty;
+        public string? BookingId { get; set; }
         public decimal Amount { get; set; }
+        public string Currency { get; set; } = "ARS";
         public PaymentStatus PaymentStatus { get; set; }
     }
 }
