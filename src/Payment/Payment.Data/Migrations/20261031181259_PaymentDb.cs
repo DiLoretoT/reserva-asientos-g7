@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Payment.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Inicial : Migration
+    public partial class PaymentDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,8 +19,8 @@ namespace Payment.Data.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Evento = table.Column<string>(type: "TEXT", nullable: true),
                     BookingId = table.Column<string>(type: "TEXT", nullable: false),
-                    Detalle = table.Column<string>(type: "TEXT", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    PaymentStatus = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -34,6 +34,7 @@ namespace Payment.Data.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     BookingId = table.Column<string>(type: "TEXT", nullable: true),
+                    PaymentId = table.Column<string>(type: "TEXT", nullable: true),
                     Amount = table.Column<decimal>(type: "TEXT", nullable: false),
                     Currency = table.Column<string>(type: "TEXT", nullable: false),
                     PaymentStatus = table.Column<int>(type: "INTEGER", nullable: false)

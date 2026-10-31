@@ -12,7 +12,7 @@ namespace Payment.Business.Services
         private readonly IAuditLogger _logger = auditLogger;
         public async Task<ProcessPaymentResult> ProcessPayment(ProcessPaymentRequest request)
         {
-            await _logger.LogAsync("Procesando pago", $"BookingId: {request.BookingId}, Amount: {request.Amount}, Status: {request.PaymentStatus}");
+            await _logger.LogAsync("Recepcion reserva", request.PaymentStatus, request.BookingId, $"Amount: {request.Amount}");
 
             try
             {
@@ -30,7 +30,7 @@ namespace Payment.Business.Services
 
                 await _paymentRepository.UpdateAsync(payment);
 
-                await _logger.LogAsync("Actualizando su estado", paymentResult.PaymentStatus == PaymentStatus.Approved ? "PagoAprobado" : "PagoRechazado", payment.BookingId);
+                await _logger.LogAsync("Pago procesado", paymentResult.PaymentStatus, payment.BookingId, $"Amount: {payment.Amount}");
 
                 return new ProcessPaymentResult
                 {
@@ -42,7 +42,7 @@ namespace Payment.Business.Services
             }
             catch (Exception ex)
             {
-                await _logger.LogAsync("Error al procesar el pago", ex.Message, request.BookingId);
+                await _logger.LogAsync("Error al procesar el pago", PaymentStatus.Rejected, request.BookingId, $"Error: {ex.Message}");
                 throw;
             }
         }

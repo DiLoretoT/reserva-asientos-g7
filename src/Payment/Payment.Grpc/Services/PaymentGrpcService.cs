@@ -1,10 +1,11 @@
 ﻿using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using Payment.Business.Services;
-using Payment.Business.DTO;
 
 
 namespace Payment.Grpc.Services
 {
+   // [Authorize]
     public class PaymentGrpcService(PaymentService paymentService) : PaymentGrpc.PaymentGrpcBase
     {
         public override async Task<ProcessPaymentReply> ProcessPayment(

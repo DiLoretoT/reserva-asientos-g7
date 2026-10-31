@@ -4,15 +4,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Payment.Data.Persistance;
+using Payment.Data.Persistence;
 
 #nullable disable
 
 namespace Payment.Data.Migrations
 {
     [DbContext(typeof(PaymentDbContext))]
-    [Migration("20261031000119_Inicial")]
-    partial class Inicial
+    [Migration("20261031181259_PaymentDb")]
+    partial class PaymentDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,10 +30,10 @@ namespace Payment.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Detalle")
+                    b.Property<string>("Evento")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Evento")
+                    b.Property<string>("PaymentStatus")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Timestamp")
@@ -58,6 +58,9 @@ namespace Payment.Data.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PaymentStatus")

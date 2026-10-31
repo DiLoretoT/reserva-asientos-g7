@@ -8,8 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 builder.Services.AddPaymentData(builder.Configuration);
 builder.Services.AddScoped<PaymentService>();
+//builder.Services.AddAuthentication("Bearer")
+//    .AddJwtBearer("Bearer", o =>
+//    {
+//        o.Authority = builder.Configuration["Auth:Authority"]; // URL del Authorization Server
+//        o.Audience = "payment-api";
+//    });
+//builder.Services.AddAuthorization();
 
 var app = builder.Build();
+//app.UseAuthentication();
+//app.UseAuthorization();
 
 app.MapGrpcService<PaymentGrpcService>();
 app.MapGet("/", () => "Payment gRPC service");

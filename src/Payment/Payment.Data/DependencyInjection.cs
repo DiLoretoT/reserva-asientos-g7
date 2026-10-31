@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Payment.Business.DTO;
 using Payment.Business.Interfaces;
 using Payment.Data.Audit;
-using Payment.Data.Persistance;
+using Payment.Data.Persistence;
 using Payment.Data.Processing;
 
 namespace Payment.Data

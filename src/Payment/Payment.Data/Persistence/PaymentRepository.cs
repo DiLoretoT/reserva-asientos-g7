@@ -1,7 +1,7 @@
 ﻿using Payment.Business.Interfaces;
 using Payment.Domain.Entities;
 
-namespace Payment.Data.Persistance
+namespace Payment.Data.Persistence
 {
     public class PaymentRepository(PaymentDbContext dbContext) : IPaymentRepository
     {
