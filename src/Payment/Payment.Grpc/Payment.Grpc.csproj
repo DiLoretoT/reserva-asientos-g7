@@ -8,12 +8,20 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.14">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Payment.Business\Payment.Business.csproj" />
+    <ProjectReference Include="..\Payment.Data\Payment.Data.csproj" />
     <ProjectReference Include="..\Payment.Domain\Payment.Domain.csproj" />
-    <ProjectReference Include="..\..\Shared\Shared.Observability\Shared.Observability.csproj" />
   </ItemGroup>
 
 </Project>
