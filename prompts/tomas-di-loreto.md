@@ -130,3 +130,13 @@ Por último, la página de asientos con EventosController y la vista que ya me p
 Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura, no explicar lo que hace cada línea. Probalo en el navegador con el evento 1, con Booking caído y con un evento que no existe, como hiciste antes.
 
 Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-30 19:59
+
+bueno, vamos a seguir con el issue #6, inicio de sesión. Ya estoy en la branch feat/inicio-sesion, que salió de dev con el front del #7 y el Keycloak de Dylan, y ya sumé el paquete Microsoft.AspNetCore.Authentication.OpenIdConnect a Availability.Web que estuve viendo que es necesario. Keycloak ya lo tengo corriendo en Docker con el docker-compose de src/Auth/keycloak y el .env armado.
+
+Revisá contracts/tokens.md. Básicamente el usuario inicia sesión en la página de login de Keycloak con OpenID Connect y authorization code, con el client availability-web, y Availability guarda la sesión en una cookie. Quiero el registro en Program.cs, y en el layout un “Iniciar sesión” y un “Cerrar sesión” con el nombre del usuario cuando está logueado. Ver los eventos y los asientos tiene que seguir sin pedir login, como dice el enunciado.
+
+El client secret no va al repo. Usá User Secrets, según recomendó el profe.
+
+Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura. Probalo en el navegador con usuario1, iniciando y cerrando sesión. Pasame el código por acá con los comentarios, yo lo escribo en el repo.
