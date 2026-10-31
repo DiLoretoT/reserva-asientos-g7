@@ -31,5 +31,14 @@ namespace Availability.Gateways.Persistencia.Repositorios
 
             return solicitud?.ADominio();
         }
+
+        public async Task EliminarAsync(Guid solicitudId)
+        {
+            // ExecuteDeleteAsync borra directo en la base con un DELETE, sin cargar antes la
+            // solicitud en memoria.
+            await _db.Solicitudes
+                .Where(s => s.Id == solicitudId)
+                .ExecuteDeleteAsync();
+        }
     }
 }

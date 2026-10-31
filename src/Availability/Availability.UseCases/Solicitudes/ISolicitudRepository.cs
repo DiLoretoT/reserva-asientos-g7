@@ -15,5 +15,11 @@ namespace Availability.UseCases.Solicitudes
         // Devuelve la solicitud registrada, o null si no existe. Lo usa el seguimiento
         // (paso 7): si existe acá y Booking todavía no la tiene, se muestra "en proceso".
         Task<SolicitudReserva?> ObtenerAsync(Guid solicitudId);
+
+        // Borra una solicitud registrada. Lo usa SolicitarReserva como acción compensatoria
+        // cuando la solicitud se guardó pero no se pudo publicar en el broker: así no queda
+        // una solicitud que Booking nunca va a recibir y que el seguimiento mostraría "en
+        // proceso" para siempre.
+        Task EliminarAsync(Guid solicitudId);
     }
 }
