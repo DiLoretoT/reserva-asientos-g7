@@ -34,6 +34,38 @@ namespace Availability.Gateways.Booking
                 "confirmada" => EstadoOcupacion.Confirmada,
                 _ => throw new FormatException($"Estado de ocupación fuera del contrato: '{estado}'.")
             };
+        
+        // Endpoint 2. Igual que en el endpoint 1, solo se llega acá con una respuesta 200, así
+        // que RespuestaOk y Procesada son true. El 404 lo resuelve ClienteBooking.
+        public static ResultadoEstadoSolicitud AResultado(this EstadoSolicitudResponse respuesta) =>
+            new()
+            {
+                RespuestaOk = true,
+                Procesada = true,
+                Estado = AEstadoReserva(respuesta.Estado),
+                Motivo = respuesta.Motivo is null ? null : AMotivo(respuesta.Motivo)
+            };
+
+        // Mismo criterio que AEstado: un valor que no está en el contrato lanza FormatException
+        // y la página avisa que no se pudo consultar, en vez de mostrar un estado supuesto.
+        private static EstadoReserva AEstadoReserva(string estado) =>
+            estado switch
+            {
+                "retenida" => EstadoReserva.Retenida,
+                "confirmada" => EstadoReserva.Confirmada,
+                "rechazada" => EstadoReserva.Rechazada,
+                "vencida" => EstadoReserva.Vencida,
+                _ => throw new FormatException($"Estado de reserva fuera del contrato: '{estado}'.")
+            };
+
+        private static MotivoRechazo AMotivo(string motivo) =>
+            motivo switch
+            {
+                "asiento_ocupado" => MotivoRechazo.AsientoOcupado,
+                "pago_fallido" => MotivoRechazo.PagoFallido,
+                "pago_no_disponible" => MotivoRechazo.PagoNoDisponible,
+                _ => throw new FormatException($"Motivo de rechazo fuera del contrato: '{motivo}'.")
+            };
     }
     
 }
