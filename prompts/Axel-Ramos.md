@@ -48,19 +48,22 @@ Payment/
 │   ├── Program.cs
 │   └── appsettings.json
 │
-├── Payment.Application/
+├── Payment.Business/
 │   ├── DTOs/
 │   │   ├─ProcessPaymentRequest.cs
 │   │   └─ProcessPaymentResult.cs
 │   ├── Interfaces/
 │   │   ├── IPaymentRepository.cs
-│   │   └── IPaymentProcessor.cs
-│   ├── Services/
-│   │   └── PaymentService.cs
-│   └── Models/
-│       └── Payment.cs
-│
-├── Payment.Infrastructure/
+│   │   ├── IPaymentProcessor.cs
+|   |   └── IAuditLogger.cs
+│   └── Services/
+|       └── PaymentService.cs
+├── Payment.Domain/
+│   ├── Entities/
+│   │   ├─MyPayment.cs
+|   |   ├─PaymentStatus.cs
+│   |   └─Auditlog.cs
+├── Payment.Data/
 │   ├── Persistence/
 │   │   ├── PaymentDbContext.cs
 │   │   └── PaymentRepository.cs
