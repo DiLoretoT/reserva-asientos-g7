@@ -8,13 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 builder.Services.AddPaymentData(builder.Configuration);
 builder.Services.AddScoped<PaymentService>();
-//builder.Services.AddAuthentication("Bearer")
-//    .AddJwtBearer("Bearer", o =>
-//    {
-//        o.Authority = builder.Configuration["Auth:Authority"]; // URL del Authorization Server
-//        o.Audience = "payment-api";
-//    });
-//builder.Services.AddAuthorization();
+// Autorización con Keycloak (contracts/tokens.md): AddValidacionKeycloak() de Shared.Auth valida
+// firma, emisor, audiencia (payment-api) y vencimiento, con la sección "Keycloak" del appsettings.
+// Queda comentado hasta la integración: si Payment exige token antes de que Booking lo mande
+// con AddTokenDeServicio("payment-api"), la llamada Booking -> Payment responde Unauthenticated.
+//builder.AddValidacionKeycloak();
 
 var app = builder.Build();
 //app.UseAuthentication();
