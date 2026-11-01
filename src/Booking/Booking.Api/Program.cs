@@ -17,6 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("Booking")
     ?? throw new InvalidOperationException("Falta configurar ConnectionStrings:Booking.");
 builder.Services.AddDbContext<BookingDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<ConsultaReservas>();
+builder.Services.AddScoped<RetencionReservas>();
 
 var app = builder.Build();
 
