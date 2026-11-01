@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Booking.Business;
 using Microsoft.Extensions.Options;
 
@@ -23,11 +22,9 @@ public class VencimientoReservasService(
                     await scope.ServiceProvider.GetRequiredService<VencimientoReservas>()
                         .VencerAsync(stoppingToken);
                 }
-                catch (Exception ex) when (ex is DbException { IsTransient: true }
-                    or TimeoutException
-                    or InvalidOperationException { InnerException: DbException { IsTransient: true } })
+                catch (Exception) when (!stoppingToken.IsCancellationRequested)
                 {
-                    // Un fallo transitorio de la base se reintenta en el siguiente ciclo.
+                    // Un ciclo fallido se reintenta en el siguiente intervalo.
                 }
             }
         }

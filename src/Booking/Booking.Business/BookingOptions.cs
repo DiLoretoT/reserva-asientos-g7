@@ -6,5 +6,5 @@ public class BookingOptions
 
     public int RetentionMinutes { get; set; }
 
-    public int ExpirationIntervalSeconds { get; set; } = 15;
+    public int ExpirationIntervalSeconds { get; set; }
 }
