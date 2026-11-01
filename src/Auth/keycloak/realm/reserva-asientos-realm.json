@@ -522,6 +522,30 @@
       ],
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "a45230ae-b3c4-46e9-8579-ccf89c8cdfa1",
+      "username": "usuario2",
+      "firstName": "Usuario",
+      "lastName": "Dos",
+      "email": "usuario2@reserva.local",
+      "emailVerified": true,
+      "enabled": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "usuario2",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-reserva-asientos"
+      ],
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [

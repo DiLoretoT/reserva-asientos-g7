@@ -140,3 +140,12 @@ Revisá contracts/tokens.md. Básicamente el usuario inicia sesión en la págin
 El client secret no va al repo. Usá User Secrets, según recomendó el profe.
 
 Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura. Probalo en el navegador con usuario1, iniciando y cerrando sesión. Pasame el código por acá con los comentarios, yo lo escribo en el repo.
+
+## 2026-10-31 15:25
+
+buenas! vamos con el issue #5, seguimiento de una solicitud. Ya creé y tenemos el repo sobre la branch seguimiento-solicitud.
+booking ya tiene mergeada su API , así que quiero un cliente http real hacia booking en availability.gateways, según el contrato definido, que reemplace a consultaOcupacionSimulada para el endpoint 1 y que también consulte al endpoint 2, el estado de una solicitud. Las llamadas a booking van con el token de servicio de availbility-web, como dice contracts/tokens.md
+
+El seguimiento es un caso de uso nuevo, con la misma estructura que ListarAsientosDisponibles. Busca la solicitud en la bdd de availability con el ISolicituRepository de Mati, y si no existe o no es del usuario logueado, que no se muestre. Cada usuario ve solo sus solicitudes, y  el UsuarioId es el sub del token de keycloak. después le pregunta el estado a booking y si responde 404, la solicitud está en proceso, si responde 200 muestra el estado y el motivo del rechazo, y si booking no responde avisa que no se pudo consultar. La pág va en solicitudes/{id} y pide login, así cada usuario ve sus propias solicitudes. 
+Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura. Probalo con Booking levantado con su compose.yaml, con una solicitud que booking todavía no tiene, una confirmada, una rechazada, booking caído y una solicitud de otro usuario.
+Pasame el código por acá con los comentarios, yo lo escribo en el repo

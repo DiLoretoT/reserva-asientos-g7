@@ -2,7 +2,6 @@ using Booking.Domain;
 
 namespace Booking.Business;
 
-// El resultado de consultar una solicitud: guarda el id de la solicitud, el asiento que pidió, el estado
-// de su reserva (retenida, confirmada, rechazada o vencida) y el motivo, que solo tiene valor si fue rechazada.
-// Es lo que devuelve el endpoint de estado de solicitud.
+// Lo que devuelve el endpoint de estado de solicitud: el asiento pedido, el estado de la reserva y el motivo
+// (solo si fue rechazada). Es un record chico para no exponer la entidad Reserva completa.
 public record EstadoSolicitud(Guid SolicitudId, Guid AsientoId, EstadoReserva Estado, MotivoRechazo? Motivo);

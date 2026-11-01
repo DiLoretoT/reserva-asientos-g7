@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Payment.Domain\Payment.Domain.csproj" />
-    <ProjectReference Include="..\Payment.Data\Payment.Data.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

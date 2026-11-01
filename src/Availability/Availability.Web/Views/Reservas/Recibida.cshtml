@@ -21,12 +21,16 @@
     @* role="status" hace que el lector de pantalla anuncie el mensaje al cargar la página. *@
     <p role="status">@Model.Mensaje</p>
 
+    @* El seguimiento (issue #5) es lo que el usuario quiere hacer después de pedir el asiento,
+       por eso es el botón principal. Volver al mapa queda como enlace secundario. *@
+    <a class="boton" asp-controller="Solicitudes" asp-action="Detalle" asp-route-id="@Model.SolicitudId">Ver el estado</a>
+
     @if (Model.EventoId is not null)
     {
-        <a class="boton" asp-controller="Eventos" asp-action="Asientos" asp-route-id="@Model.EventoId">Volver al mapa</a>
+        <a class="boton boton--texto" asp-controller="Eventos" asp-action="Asientos" asp-route-id="@Model.EventoId">Volver al mapa</a>
     }
     else
     {
-        <a class="boton" asp-controller="Eventos" asp-action="Index">Ver los eventos</a>
+        <a class="boton boton--texto" asp-controller="Eventos" asp-action="Index">Ver los eventos</a>
     }
 </div>
