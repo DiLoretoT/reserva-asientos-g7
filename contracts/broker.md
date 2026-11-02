@@ -2,7 +2,7 @@
 
 Propuesta para el [issue #44](https://github.com/DiLoretoT/reserva-asientos-g7/issues/44), pendiente de aprobación de las parejas de Availability, Booking y Broker (Facundo y Gianluca). Define el mensaje de solicitud de un asiento; no implementa el transporte ni modifica los servicios.
 
-El documento tiene dos partes: el **contrato** (cuerpo y propiedades del mensaje), que es lo que se aprueba ahora, y el **comportamiento esperado y los acuerdos pendientes**, que se cierran antes de implementar.
+El alcance de la aprobación es el formato y sus validaciones. Las decisiones operativas pendientes se resolverán durante la implementación y no bloquean la aprobación de este contrato.
 
 ## Responsabilidades y base existente
 
@@ -26,9 +26,9 @@ JSON UTF-8, propiedades `camelCase`, con los cinco campos existentes, todos obli
 | `eventoId` | string / `Guid` | Evento al que pertenece el asiento. |
 | `asientoId` | string / `Guid` | Asiento solicitado. |
 | `usuarioId` | string / `string` | Identificador del usuario autenticado; no es un token. |
-| `fechaSolicitud` | string ISO 8601 UTC / `DateTime` | Fecha de registro en Availability, con `Z` final; no es la fecha de vencimiento. |
+| `fechaSolicitud` | string ISO 8601 UTC / `DateTime` | Fecha de registro en Availability, con UTC explícito (`Z` o `+00:00`); no es la fecha de vencimiento. |
 
-Availability debe generar `fechaSolicitud` con `DateTime.UtcNow` (`Kind = Utc`) y serializarla en formato ISO 8601 UTC terminado en `Z`. Booking rechaza las fechas sin `Z`, incluso si usan un offset equivalente como `+00:00`; no las convierte ni normaliza.
+Se recomienda que Availability genere `fechaSolicitud` con `DateTime.UtcNow` (`Kind = Utc`). Booking acepta fechas ISO 8601 válidas con UTC explícito, terminadas en `Z` o `+00:00`; por ejemplo, `2026-11-01T15:30:00Z` y `2026-11-01T15:30:00+00:00` representan el mismo instante. Rechaza fechas sin zona horaria o con un offset distinto de UTC.
 
 Ejemplo ilustrativo:
 
@@ -51,51 +51,32 @@ Booking toma `solicitudId` como TraceId, según [logs y traza](logs.md); no se a
 | `MessageId` | `solicitudId.ToString("D")`, UUID con guiones en minúsculas. |
 | `CorrelationId` | El mismo valor de `MessageId`, para correlacionar la solicitud. |
 | `ContentType` | `application/json`. |
-| `Subject` | `solicitud-reserva`. Permite a Broker definir la regla de la suscripción de Booking. |
-| `ApplicationProperties["version"]` | `1`. Versión del contrato; un cambio incompatible incrementa el valor. |
+| `Subject` | `solicitud-reserva`. Identifica el tipo de mensaje; no exige un filtro en la suscripción. |
 
-`MessageId` y `CorrelationId` deben coincidir con el `solicitudId` del cuerpo. Reenviar conserva los cinco campos y estas propiedades; no crea otra solicitud. Son metadatos de transporte, no campos adicionales del JSON. Booking trata una `version` desconocida como mensaje inválido (ver DLQ). Véase [propiedades de mensajes de Azure](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-messages-payloads).
+`MessageId` y `CorrelationId` deben coincidir con el `solicitudId` del cuerpo. Reenviar conserva los cinco campos y estas propiedades; no crea otra solicitud. Son metadatos de transporte, no campos adicionales del JSON. Véase [propiedades de mensajes de Azure](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-messages-payloads).
 
 ---
 
-# Parte 2: Comportamiento esperado y acuerdos pendientes
+## Validaciones y motivos propios de DLQ
 
-## Procesamiento esperado (propuesta)
+Booking valida que el cuerpo sea un objeto JSON con los cinco campos presentes, no nulos y de los tipos indicados. Los UUID deben ser válidos y distintos de `Guid.Empty`; `usuarioId` no puede estar vacío ni contener solo espacios y admite hasta 200 caracteres. La fecha debe cumplir la regla de UTC explícito anterior y los cuatro metadatos deben estar presentes y ser coherentes con el contrato. Availability valida la existencia del evento/asiento; Booking no tiene ese catálogo.
 
-- **Validación:** cuerpo JSON válido, campos presentes y no nulos, UUID válidos y distintos de `Guid.Empty`, `usuarioId` no vacío ni solo espacios y de hasta 200 caracteres (límite existente en Booking), `fechaSolicitud` válida en formato ISO 8601 UTC terminado obligatoriamente en `Z`, `Subject` y `version` esperados y metadatos coherentes. Availability valida la existencia del evento/asiento; Booking no tiene ese catálogo.
-- **Duplicados:** asumir posibles reentregas. Usar `solicitudId` como clave de idempotencia; la restricción UNIQUE evita otra reserva, pero no garantiza por sí sola evitar otro cobro. Un duplicado ya terminado conserva su resultado y se completa sin repetir efectos; uno pendiente debe retomar el trabajo, no darse por terminado solo porque existe una reserva. La consulta previa de `RetencionReservas` no resuelve por sí sola duplicados concurrentes ni pagos.
-- **Mismo `solicitudId` con datos distintos:** es un mensaje inválido. No sobrescribe la reserva existente; se envía a DLQ con el motivo `conflicto_idempotencia`.
-- **Recepción:** proponer `PeekLock` y confirmación manual (`AutoCompleteMessages = false`). Completar con `CompleteMessageAsync` solo después de persistir el resultado o garantizar una continuación durable, según el acuerdo de la sección siguiente.
-- **Fallo recuperable:** no completar; permitir reentrega mediante abandono o vencimiento del bloqueo. Si falla la confirmación después de persistir, la reentrega debe reconocer el trabajo realizado. Reintentos limitados, con espera, y renovación del bloqueo mientras se procesa; tiempos y límites por acordar. Estas operaciones siguen la [semántica de recepción y confirmación de Azure](https://learn.microsoft.com/en-us/azure/service-bus-messaging/message-transfers-locks-settlement).
-- **Mensaje inválido:** proponer envío a la DLQ de la suscripción, sin reintentos inútiles ni crear una reserva con datos inválidos. El agotamiento de `MaxDeliveryCount` también deriva a DLQ. Un rechazo de negocio como `asiento_ocupado` es un resultado válido, no un mensaje inválido. La DLQ requiere revisión y recuperación explícitas; no se reprocesa automáticamente ([referencia](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dead-letter-queues)).
-- **Publicación:** esperar la aceptación de Azure antes de informar envío exitoso; eso no significa que Booking haya procesado. Un timeout puede dejar el resultado del envío incierto. Reintentar con el mismo `MessageId`; la [detección de duplicados](https://learn.microsoft.com/en-us/azure/service-bus-messaging/duplicate-detection), si se habilita, depende de su ventana y no reemplaza la idempotencia de Booking.
-
-### Motivos de DLQ propuestos
-
-Lista cerrada para `DeadLetterReason`, con una descripción breve en `DeadLetterErrorDescription`. No deben incluir `usuarioId` ni otros datos personales.
+Los mensajes inválidos van a DLQ sin crear ni sobrescribir reservas. Solo se usan estos dos motivos propios en `DeadLetterReason`, con una descripción breve en `DeadLetterErrorDescription`, sin datos personales:
 
 | `DeadLetterReason` | Cuándo se usa |
 |---|---|
-| `json_invalido` | El cuerpo no es JSON válido o no se puede deserializar. |
-| `campo_invalido` | Falta un campo, es nulo, tiene un UUID inválido o `Guid.Empty`, `usuarioId` fuera de regla o fecha sin `Z`. |
-| `metadatos_incoherentes` | `MessageId` o `CorrelationId` no coinciden con `solicitudId`, o `ContentType`/`Subject` no son los esperados. |
-| `version_no_soportada` | `version` desconocida. |
-| `conflicto_idempotencia` | Mismo `solicitudId` con `eventoId`, `asientoId` o `usuarioId` distintos a los ya registrados. |
+| `json_invalido` | El cuerpo no se puede interpretar como JSON por un error de sintaxis o codificación. |
+| `campo_invalido` | El JSON no es un objeto; falta un campo o metadato, es nulo, tiene un tipo o valor inválido; fecha sin zona o sin UTC; metadatos incoherentes; o mismo `solicitudId` con `eventoId`, `asientoId` o `usuarioId` distintos a los registrados. |
 
-El agotamiento de `MaxDeliveryCount` o del TTL lo registra Azure con sus propios motivos.
+Un rechazo de negocio como `asiento_ocupado` no es un mensaje inválido. Los motivos que Azure asigne automáticamente, por ejemplo por entregas agotadas, son independientes de estos dos motivos propios.
 
-## Acuerdos pendientes antes de implementar
+# Parte 2: Acuerdos para la implementación
 
-Cada punto se cierra cuando todas las parejas indicadas lo aprueban en el issue.
+Estos puntos quedan abiertos y **no bloquean la aprobación del contrato**:
 
-- [ ] **Contrato y reglas anteriores** (campos, validación, metadatos, `Subject`, `version`, motivos de DLQ y reentrega). Aprueban: Availability, Booking y Broker.
-- [ ] **Cuándo completar con Payment.** Se propone completar tras persistir el resultado final (`confirmada`, `rechazada` o `vencida`). Completar al guardar `retenida` solo sería aceptable si existe una continuación durable que retome el pago tras una caída; esa garantía no existe hoy. Acordar recuperación e idempotencia del cobro, y coordinación con el vencimiento: según REST, falta de respuesta de Payment corresponde a `pago_no_disponible`, no simplemente a `vencida`. Aprueban: Booking y Broker, coordinando con Payment y Availability.
-- [ ] **Envío incierto.** El flujo simulado actual elimina la solicitud cuando `PublicarAsync` devuelve `false`. Acordar cómo distinguir rechazo de envío incierto antes del publicador real, para no borrar una solicitud que Azure pudo aceptar. Aprueban: Availability y Broker.
-- [ ] **DLQ.** Responsable de revisar y reprocesar, y cómo mostrar una solicitud que nunca llegó a procesarse, evitando un "en proceso" indefinido. Aprueban: Broker, Booking y Availability.
-- [ ] **Detección de duplicados del tópico.** Decidir si se habilita y con qué ventana. Booking no depende de ella. Aprueban: Broker y Availability.
+- **Confirmación y Payment:** el momento de ejecutar `CompleteMessageAsync` (tras retener o tras el resultado final), la recuperación y la idempotencia del cobro se resolverán durante los issues [#12](https://github.com/DiLoretoT/reserva-asientos-g7/issues/12), [#14](https://github.com/DiLoretoT/reserva-asientos-g7/issues/14) y [#42](https://github.com/DiLoretoT/reserva-asientos-g7/issues/42), coordinando Booking con Payment y Broker. Este documento no elige una alternativa ni incorpora `monto` al mensaje.
+- **Duplicados:** `solicitudId` identifica la misma solicitud en las reentregas. Deben evitarse reservas y cobros duplicados; la restricción UNIQUE por sí sola no resuelve el cobro. El tratamiento de una reserva pendiente se definirá junto con el momento de confirmación; no se impone aquí cómo reanudarla.
+- **Envío incierto:** Availability y Broker acordarán cómo conservar y reintentar una solicitud si no se conoce el resultado del envío, manteniendo el mismo `MessageId`. Un timeout no demuestra que Azure haya rechazado el mensaje; aceptar el envío tampoco equivale a procesarlo en Booking.
+- **DLQ:** Broker, Booking y Availability coordinarán la revisión y recuperación de mensajes y cómo mostrar solicitudes que no llegaron a procesarse.
 
-## Configuración por acordar
-
-Broker debe comunicar el namespace y los nombres reales del tópico y la suscripción; no están definidos en el código revisado. Crear la suscripción antes de publicar y asegurar que su regla entregue las solicitudes con `Subject = solicitud-reserva`. Las réplicas de Booking consumirán de **la misma suscripción**, como consumidores competidores; una por réplica multiplicaría las copias ([tópicos y suscripciones](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-queues-topics-subscriptions)).
-
-Acordar también permisos de envío para Availability y recepción para Booking, mecanismo de autenticación, duración/renovación del bloqueo, `MaxDeliveryCount`, política de reintentos, TTL y tratamiento de expiración hacia DLQ. El TTL del mensaje no es el vencimiento de la reserva. Si se activa detección de duplicados, definir su ventana y compatibilidad con la configuración del tópico. Los valores quedan pendientes de Broker con las parejas consumidoras; conexiones y secretos se proporcionarán fuera del repositorio. No se fijan nombres, credenciales ni tiempos operativos en esta propuesta.
+La topología, filtros, parámetros de entrega, reintentos y claves de configuración se documentan por separado en el [PR #86 de Broker](https://github.com/DiLoretoT/reserva-asientos-g7/pull/86). Este contrato no fija sus valores ni exige filtros de suscripción; no implementa el publicador, consumidor ni la integración con Payment.
