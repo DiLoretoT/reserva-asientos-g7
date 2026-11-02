@@ -2,9 +2,11 @@ using Booking.Api;
 using Booking.Business;
 using Booking.Data;
 using Microsoft.EntityFrameworkCore;
+using Shared.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddValidacionKeycloak();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options => BookingJson.Configurar(options.SerializerOptions));
 builder.Services.AddControllers().AddJsonOptions(options => BookingJson.Configurar(options.JsonSerializerOptions));
@@ -34,6 +36,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
