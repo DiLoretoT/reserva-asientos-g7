@@ -42,13 +42,21 @@ Valores objetivo: la prueba de publicar y consumir en el namespace confirma que 
 
 Ninguna clave se sube al repositorio: cada una se guarda en su máquina, fuera de los archivos versionados, como fija el README.
 
+## Lo verificado con la prueba (2 de noviembre)
+
+La primera prueba de publicar y consumir ya corrió contra el namespace y confirma:
+
+- El tópico `grupo7-booking-topic` y la suscripción `booking` existen.
+- La clave del integrante puede crear y borrar suscripciones de desarrollo: se creó y se borró `booking-facundo` sin errores.
+- El ciclo de ida y vuelta funciona: el mensaje de prueba llegó como copia a ambas suscripciones, se completó en las dos y `booking-facundo` quedó con 0 mensajes activos.
+
+`MaxDeliveryCount`, `LockDuration`, el TTL, sesiones y detección de duplicados quedan pendientes hasta la próxima corrida, que los lee de la entidad.
+
 ## Acceso
 
 Availability envía y Booking recibe; ningún otro servicio publica ni consume. Claves separadas por servicio (solo Enviar para el publicador, solo Escuchar para el consumer) solo si la cátedra entrega claves separadas; si no, una cadena común. Qué entregue la cátedra: a confirmar.
 
 ## Pendientes
 
-- Namespace de Service Bus para desarrollo y la demo, y la prueba de publicar y consumir que valide los valores objetivo de este documento.
-- Si se pueden crear las suscripciones `booking-<nombre>` de desarrollo: a confirmar con lo que entregue la cátedra.
-- Valores reales de la entidad (`LockDuration`, `MaxDeliveryCount`, TTL, retención de mensajes): a confirmar con la prueba del namespace.
+- Los valores reales de la entidad (`MaxDeliveryCount`, `LockDuration`, TTL, sesiones, detección de duplicados): pendientes hasta la próxima corrida de la prueba.
 - Connection strings por máquina (dónde se guardan): a confirmar.
