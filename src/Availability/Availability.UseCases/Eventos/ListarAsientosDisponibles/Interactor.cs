@@ -14,23 +14,52 @@ namespace Availability.UseCases.Eventos.ListarAsientosDisponibles
     // Recibe sus dependencias por constructor y todas son interfaces definidas en
     // este anillo. La clase concreta que finalmente llegue en cada una lo define
     // la configuración de la aplicación con program.cs
+    //
+    // Auditoría (issue #9, contracts/logs.md, Matías De La Rosa): operación "listar_asientos".
+    // Usa el TraceId que el middleware generó para el pedido; el cliente de Booking lo manda en
+    // el header X-Trace-Id, así la consulta de ocupación queda con el mismo TraceId en los logs
+    // de Booking.
     public class Interactor : IInputPort
     {
+        private const string Operacion = "listar_asientos";
+
         private readonly IEventoRepository _eventoRepository;
         private readonly IConsultaOcupacion _consultaOcupacion;
         private readonly IOutputPort _presenter;
+        private readonly IAuditoria _auditoria;
 
         public Interactor(
             IEventoRepository eventoRepository,
             IConsultaOcupacion consultaOcupacion,
-            IOutputPort presenter)
+            IOutputPort presenter,
+            IAuditoria auditoria)
         {
             _eventoRepository = eventoRepository;
             _consultaOcupacion = consultaOcupacion;
             _presenter = presenter;
+            _auditoria = auditoria;
         }
 
         public async Task HandleAsync(InputDataRequest input)
+        {
+            _auditoria.Inicio(Operacion);
+
+            // Arranca en Error: si algo lanza una excepción, el finally registra el fin igual.
+            ResultadoAuditoria resultado = ResultadoAuditoria.Error;
+            string? motivo = "excepcion";
+
+            try
+            {
+                (resultado, motivo) = await ListarAsync(input);
+            }
+            finally
+            {
+                _auditoria.Fin(Operacion, resultado, motivo);
+            }
+        }
+
+        // El trabajo del caso de uso. Devuelve cómo terminó, para que HandleAsync lo audite.
+        private async Task<(ResultadoAuditoria Resultado, string? Motivo)> ListarAsync(InputDataRequest input)
         {
             // Pide el evento con sus asientos. Puede volver null si no existe.
             Evento? evento = await _eventoRepository.ObtenerConAsientosAsync(input.EventoId);
@@ -44,7 +73,7 @@ namespace Availability.UseCases.Eventos.ListarAsientosDisponibles
                     EventoEncontrado = false,
                     EventoId = input.EventoId
                 });
-                return;
+                return (ResultadoAuditoria.Rechazada, "evento_inexistente");
             }
 
             // Pide la ocupación del evento. Si booking no responde, no hay excepción, 
@@ -85,6 +114,13 @@ namespace Availability.UseCases.Eventos.ListarAsientosDisponibles
                 OcupacionDisponible = ocupacion.RespuestaOk,
                 Asientos = asientos
             });
+
+            // Si Booking no respondió, la operación igual termina bien: la página se muestra con
+            // el aviso y los asientos sin estado (se prioriza la disponibilidad). Por eso el
+            // resultado es Ok, y el motivo deja registrado que faltó la ocupación.
+            return ocupacion.RespuestaOk
+                ? (ResultadoAuditoria.Ok, null)
+                : (ResultadoAuditoria.Ok, "ocupacion_no_disponible");
         }
         // Estado de un asiento para poder luego mostrar en pantalla
         private static EstadoAsiento CalcularEstado(
