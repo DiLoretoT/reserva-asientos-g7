@@ -59,3 +59,35 @@ Agregá este pedido al final de `prompts/jonathan-villarreal.md`, conservando el
 **Importante:** dejá todos los cambios locales para revisión. No hagas commit, push, merge ni Pull Request.
 
 Al terminar, entregame un resumen de los cambios y las verificaciones realizadas.
+
+## Booking — Contrato de mensajes del broker (issue #44)
+
+Quiero preparar el contrato de mensajes entre Availability y Booking mediante Azure Service Bus, respetando la arquitectura y las convenciones existentes del grupo.
+
+Primero verificá el estado local, actualizá `dev` desde `origin/dev` mediante fast-forward y creá una rama nueva `docs/contrato-broker`. Si hay cambios locales sin guardar o algún conflicto, detenete y avisame sin descartarlos.
+
+### Trabajo
+
+1. Revisá el issue #44, los contratos existentes y las clases actuales de Availability y Booking relacionadas con solicitudes y mensajes.
+2. Creá `contracts/broker.md` con una propuesta clara y concisa que incluya:
+   - Responsabilidades de Availability, Azure Service Bus y Booking.
+   - Formato JSON `camelCase`, tipos y ejemplo de mensaje, reutilizando los cinco campos existentes.
+   - `solicitudId` como identificador único y TraceId, sin agregar otro campo de trazabilidad al cuerpo.
+   - Propuesta para `MessageId`, `CorrelationId` y `ContentType` de Azure Service Bus.
+   - Reglas esperadas para mensajes duplicados, validación, confirmación de procesamiento, reintentos y mensajes inválidos.
+   - Configuración necesaria de tópico y suscripción, sin inventar valores ni incluir credenciales.
+3. Marcá claramente las decisiones que requieran aprobación de las parejas de Availability, Booking o Broker, especialmente cuándo se considera completado un mensaje teniendo en cuenta la futura integración con Payment.
+
+### Alcance
+
+- Este trabajo es exclusivamente de documentación del contrato.
+- No implementar todavía el publicador ni el consumidor real.
+- No modificar clases, APIs, bases de datos ni configuración de los servicios.
+- No agregar logs, auditoría ni funcionalidades nuevas.
+- Evitar documentación extensa o decisiones innecesarias.
+
+Agregá este pedido al final de `prompts/jonathan-villarreal.md`, conservando el historial anterior.
+
+Dejá únicamente esos dos archivos modificados, listos para revisión. No hagas commit, push ni Pull Request.
+
+Al terminar, entregame un resumen de la propuesta, las decisiones pendientes de acordar y los archivos modificados.
