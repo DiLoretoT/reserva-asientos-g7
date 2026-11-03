@@ -26,18 +26,7 @@ public class ConsumidorSolicitudesServiceBus(
         try
         {
             await processor.StartProcessingAsync(stoppingToken);
-            await Task.WhenAny(manejador.PagoPendiente, Task.Delay(Timeout.Infinite, stoppingToken));
-            if (manejador.PagoPendiente.IsCompleted)
-            {
-                var anterior = trace.TraceId;
-                trace.TraceId = (await manejador.PagoPendiente).ToString("D");
-                try
-                {
-                    logger.LogWarning("Consumidor pausado: Payment pendiente. {Operacion} {Resultado}",
-                        "consumir_solicitudes", "error");
-                }
-                finally { trace.TraceId = anterior; }
-            }
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
         catch (Exception ex) { RegistrarError(ex, "inicio"); }
