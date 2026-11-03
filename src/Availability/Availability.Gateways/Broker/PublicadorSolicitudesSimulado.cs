@@ -25,8 +25,14 @@ namespace Availability.Gateways.Broker
         private readonly ILogger<PublicadorSolicitudesSimulado> _logger;
 
         // simularSinRespuesta = true hace de cuenta que el broker está caído. El valor sale de
-        // appsettings.Development.json (Broker:SimularSinRespuesta), así se prueba el aviso
-        // al usuario y la acción compensatoria del caso de uso sin tocar el código.
+        // appsettings.Development.json (Broker:SimularSinRespuesta), así se prueba sin tocar el
+        // código que la solicitud queda pendiente de envío. El valor se lee al arrancar: al
+        // reiniciar el sitio con false, ReintentarEnvio publica las pendientes, que siguen en
+        // la base.
+        //
+        // El publicador real de Azure Service Bus tiene que usar el solicitudId como MessageId
+        // del mensaje. Es lo que permite reconocer los reenvíos del patrón Outbox, que siempre
+        // publican la misma solicitud con el mismo solicitudId.
         public PublicadorSolicitudesSimulado(bool simularSinRespuesta, ILogger<PublicadorSolicitudesSimulado> logger)
         {
             _simularSinRespuesta = simularSinRespuesta;

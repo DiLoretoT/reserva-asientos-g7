@@ -65,7 +65,7 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 
 | Servicio | Operaciones auditadas |
 |---|---|
-| Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `consultar_solicitud` (detalle abajo) |
+| Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `reintentar_envio`, `consultar_solicitud` (detalle abajo) |
 | Booking | A definir |
 | Payment | A definir |
 
@@ -75,7 +75,10 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 |---|---|---|
 | `listar_eventos` | Guid nuevo por pedido | `ok` · `error` (`excepcion`) |
 | `listar_asientos` | Guid nuevo por pedido; viaja a Booking en `X-Trace-Id` | `ok` · `ok` con `ocupacion_no_disponible` si Booking no respondió (la página se muestra igual) · `rechazada` con `evento_inexistente` · `error` (`excepcion`) |
-| `solicitar_reserva` | El `solicitudId`, que Availability genera al empezar la operación | `ok` · `rechazada` con `asiento_inexistente` · `error` con `broker_no_disponible` o `excepcion` |
-| `consultar_solicitud` | El `solicitudId` consultado; viaja a Booking en `X-Trace-Id` | `ok` (cualquier estado, incluido "en proceso") · `rechazada` con `solicitud_inexistente` (también si es de otro usuario) · `error` con `booking_no_disponible` o `excepcion` |
+| `solicitar_reserva` | El `solicitudId`, que Availability genera al empezar la operación | `ok` · `rechazada` con `asiento_inexistente` · `error` con `broker_no_disponible` (la solicitud queda guardada como pendiente de envío) o `excepcion` |
+| `reintentar_envio` | El `solicitudId` de la solicitud pendiente que se reenvía | `ok` cuando el broker confirma la publicación · `error` con `broker_no_disponible` (sigue pendiente) o `excepcion` |
+| `consultar_solicitud` | El `solicitudId` consultado; viaja a Booking en `X-Trace-Id` | `ok` (cualquier estado, incluidos "en proceso" y "pendiente de envío") · `rechazada` con `solicitud_inexistente` (también si es de otro usuario) · `error` con `booking_no_disponible` o `excepcion` |
 
-El `Motivo` se registra como propiedad aparte en la línea de fin. Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availability.Gateways` llama a `IAuditLogger`, porque `Shared.Observability` depende de ASP.NET Core y los casos de uso no pueden referenciarlo sin romper Clean Architecture.
+El `Motivo` se registra como propiedad aparte en la línea de fin. `reintentar_envio` la ejecuta un proceso en segundo plano de Availability cada 15 segundos, sobre las solicitudes que quedaron pendientes de envío porque el broker no respondió (patrón Outbox). En cada vuelta reenvía las pendientes registradas hace más de 90 segundos, de la más vieja a la más nueva, y se detiene en la primera que el broker no confirma. Cada intento registra su propio `reintentar_envio`. Reenvía el mensaje con el mismo `solicitudId`, que es el `MessageId` del contrato del broker. Usa ese `solicitudId` como `TraceId`, así el reenvío queda en la misma cadena de sucesos que el `solicitar_reserva` que creó la solicitud.
+
+Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availability.Gateways` llama a `IAuditLogger`, porque `Shared.Observability` depende de ASP.NET Core y los casos de uso no pueden referenciarlo sin romper Clean Architecture.

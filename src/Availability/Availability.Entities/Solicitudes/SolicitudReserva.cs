@@ -8,8 +8,10 @@ namespace Availability.Entities.Solicitudes
     // el usuario consulta una solicitud que Booking todavía no procesó, Availability sabe
     // que existe y la muestra "en proceso" (consistencia eventual, ver el contrato REST).
     //
-    // No tiene estado (retenida, confirmada, rechazada, vencida). El dueño de las reservas
-    // es Booking, así que el estado se le consulta a Booking, igual que con Asiento.
+    // No tiene el estado de la reserva (retenida, confirmada, rechazada, vencida). El dueño
+    // de las reservas es Booking, así que ese estado se le consulta a Booking, igual que con
+    // Asiento. Sí tiene EstadoEnvio, que dice si la solicitud ya salió hacia el broker: ese
+    // dato es de Availability, que es quien publica.
     public class SolicitudReserva
     {
         // Identificador único de la solicitud (paso 3 del enunciado). Es Guid y lo genera
@@ -32,5 +34,10 @@ namespace Availability.Entities.Solicitudes
         // Cuándo se registró la solicitud, en UTC para que no dependa de la zona horaria
         // del servidor. Sirve para decidir cuánto tiempo mostrarla "en proceso".
         public DateTime FechaSolicitud { get; set; }
+
+        // Patrón Outbox: la solicitud se guarda siempre como Pendiente y pasa a Enviada cuando
+        // el broker confirma la publicación. Si el broker no responde, queda Pendiente y la
+        // reenvía el caso de uso ReintentarEnvio.
+        public EstadoEnvio EstadoEnvio { get; set; } = EstadoEnvio.Pendiente;
     }
 }

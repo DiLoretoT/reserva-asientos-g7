@@ -20,6 +20,16 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
     // caída de Booking o de Payment se trasladaría a Availability. El resultado se consulta
     // después, con el seguimiento (paso 7).
     //
+    // Patrón Outbox (punto 2 de la revisión de Facundo en el PR #85). La solicitud se guarda
+    // siempre en la base de Availability, marcada como pendiente de envío, y recién después se
+    // publica. Si el broker confirma, se marca como enviada. Si no responde, la solicitud no se
+    // borra: queda pendiente y la reenvía el caso de uso ReintentarEnvio, que corre en segundo
+    // plano. No se borra porque un timeout no prueba que el broker haya rechazado el mensaje.
+    // Puede haberlo recibido igual, y si Availability la borrara, Booking procesaría una
+    // reserva que el usuario no podría seguir. Los reenvíos usan el mismo solicitudId, que es
+    // el MessageId del contrato del broker, así Booking reconoce un mensaje repetido y no
+    // procesa dos veces la misma solicitud.
+    //
     // Auditoría (issue #9, contracts/logs.md): operación "solicitar_reserva". Según el
     // contrato, su TraceId es el solicitudId, el mismo que viaja en el mensaje del broker. Así
     // la cadena de sucesos se sigue con un solo identificador en Availability, Booking y Payment.
@@ -100,13 +110,15 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
             // 2. La solicitud con su identificador único. El Guid lo genera Availability y no
             // la base, porque viaja en el mensaje del broker y con él se le consulta después
             // el estado a Booking. Es el que se generó al empezar la operación (el TraceId).
+            // Nace pendiente de envío: todavía no salió hacia el broker.
             var solicitud = new SolicitudReserva
             {
                 Id = solicitudId,
                 EventoId = input.EventoId,
                 AsientoId = input.AsientoId,
                 UsuarioId = input.UsuarioId,
-                FechaSolicitud = DateTime.UtcNow
+                FechaSolicitud = DateTime.UtcNow,
+                EstadoEnvio = EstadoEnvio.Pendiente
             };
 
             // 3. Se guarda antes de publicar. Si se publicara primero y la base fallara,
@@ -125,26 +137,34 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
 
             if (!publicada)
             {
-                // Acción compensatoria: la solicitud se guardó pero Booking nunca la va a
-                // recibir, así que se borra para no dejarla "en proceso" para siempre. El
-                // usuario recibe el aviso y puede volver a intentarlo.
+                // El broker no respondió. La solicitud queda guardada como pendiente y la
+                // reenvía ReintentarEnvio. El usuario recibe su número de solicitud igual,
+                // porque el pedido quedó registrado y lo puede seguir desde el seguimiento.
                 //
-                // Una alternativa más robusta es el patrón Outbox: guardar el mensaje como
-                // pendiente en la misma transacción y que un proceso en segundo plano lo
-                // reintente hasta publicarlo. Para el alcance del TP alcanza con compensar.
-                await _solicitudRepository.EliminarAsync(solicitud.Id);
-
+                // En la auditoría la operación termina en error con broker_no_disponible, como
+                // pide el contrato de logs: la publicación falló, aunque el pedido no se perdió.
+                // El reenvío registra su propia operación con el mismo TraceId.
                 await _presenter.HandleAsync(new OutputDataResponse
                 {
-                    Resultado = ResultadoSolicitud.NoSePudoEnviar,
+                    Resultado = ResultadoSolicitud.PendienteDeEnvio,
                     EventoId = input.EventoId,
+                    SolicitudId = solicitud.Id,
                     Fila = asiento.Fila,
                     Numero = asiento.Numero
                 });
                 return (ResultadoAuditoria.Error, "broker_no_disponible");
             }
 
-            // 5. Se entrega el resultado sin esperar a Booking.
+            // 5. El broker confirmó: la solicitud ya salió. Si marcarla falla (por ejemplo, la
+            // base se cae justo acá), la excepción se propaga y el usuario ve un error, aunque
+            // su pedido salió. La solicitud queda pendiente y ReintentarEnvio la vuelve a
+            // publicar con el mismo MessageId, que Booking reconoce como repetido. Del lado del
+            // broker el peor caso es un mensaje duplicado y nunca uno perdido. Del lado del
+            // usuario, si vuelve a pedir el asiento, se crea otra solicitud, y Booking rechaza
+            // la segunda con asiento_ocupado.
+            await _solicitudRepository.MarcarEnviadaAsync(solicitud.Id);
+
+            // 6. Se entrega el resultado sin esperar a Booking.
             await _presenter.HandleAsync(new OutputDataResponse
             {
                 Resultado = ResultadoSolicitud.Recibida,

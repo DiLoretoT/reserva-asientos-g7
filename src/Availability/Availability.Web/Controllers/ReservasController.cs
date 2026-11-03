@@ -19,6 +19,7 @@ namespace Availability.Web.Controllers
         // viajan en la dirección.
         private const string ClaveAsiento = "SolicitudRecibida.Asiento";
         private const string ClaveEvento = "SolicitudRecibida.EventoId";
+        private const string ClavePendiente = "SolicitudRecibida.PendienteDeEnvio";
 
         private readonly SolicitarReservaController _solicitarReserva;
 
@@ -50,16 +51,16 @@ namespace Availability.Web.Controllers
             SolicitarReservaViewModel viewModel =
                 await _solicitarReserva.SolicitarReserva(eventoId, asientoId, usuarioId);
 
-            if (!viewModel.Recibida)
+            if (!viewModel.Registrada)
             {
-                // Los errores se muestran en la misma respuesta, sin redirigir: no se creó
-                // nada, así que recargar la página no duplica ninguna solicitud. El código de
-                // estado le indica al navegador qué pasó, como hace EventosController con el
-                // evento inexistente.
-                Response.StatusCode = viewModel.PuedeReintentar
-                    ? StatusCodes.Status503ServiceUnavailable
-                    : StatusCodes.Status404NotFound;
-
+                // El único caso que no registra la solicitud es el asiento inexistente. Se
+                // muestra en la misma respuesta, sin redirigir: no se creó nada, así que
+                // recargar la página no duplica ninguna solicitud. El código 404 le indica al
+                // navegador qué pasó, como hace EventosController con el evento inexistente.
+                //
+                // Con el broker caído ya no se llega acá: por el patrón Outbox la solicitud
+                // queda registrada como pendiente de envío y sigue el camino de abajo.
+                Response.StatusCode = StatusCodes.Status404NotFound;
                 return View("NoRecibida", viewModel);
             }
 
@@ -71,6 +72,7 @@ namespace Availability.Web.Controllers
             // para mostrar el asiento en la página a la que se redirige.
             TempData[ClaveAsiento] = viewModel.AsientoTexto;
             TempData[ClaveEvento] = viewModel.EventoId;
+            TempData[ClavePendiente] = viewModel.PendienteDeEnvio;
 
             return RedirectToAction(nameof(Recibida), new { id = viewModel.SolicitudId });
         }
@@ -86,7 +88,11 @@ namespace Availability.Web.Controllers
             // se lee con "is Guid".
             Guid? eventoId = TempData[ClaveEvento] is Guid evento ? evento : null;
 
-            return View(new SolicitudRecibidaViewModel(id, asiento, eventoId));
+            // Si el usuario vuelve a abrir la página más tarde, TempData ya no tiene el dato y
+            // se muestra el texto de solicitud recibida. El estado real lo da el seguimiento.
+            bool pendienteDeEnvio = TempData[ClavePendiente] is true;
+
+            return View(new SolicitudRecibidaViewModel(id, asiento, eventoId, pendienteDeEnvio));
         }
     }
 }

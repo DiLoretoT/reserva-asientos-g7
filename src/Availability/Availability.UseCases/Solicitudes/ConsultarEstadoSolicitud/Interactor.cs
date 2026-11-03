@@ -89,6 +89,28 @@ namespace Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud
             Asiento asiento = evento.Asientos.FirstOrDefault(a => a.Id == solicitud.AsientoId)
                 ?? throw new InvalidOperationException($"La solicitud {solicitud.Id} referencia un asiento inexistente.");
 
+            // Patrón Outbox: si la solicitud sigue pendiente de envío, no se le pregunta a Booking.
+            // Lo más probable es que no la haya recibido, y aunque la tuviera (un timeout no
+            // descarta que el mensaje haya llegado), ReintentarEnvio la va a publicar de nuevo con
+            // el mismo solicitudId. Se muestra como pendiente de envío hasta que salga.
+            if (solicitud.EstadoEnvio == EstadoEnvio.Pendiente)
+            {
+                await _presenter.HandleAsync(new OutputDataResponse
+                {
+                    SolicitudEncontrada = true,
+                    SolicitudId = solicitud.Id,
+                    FechaSolicitud = solicitud.FechaSolicitud,
+                    NombreEvento = evento.Nombre,
+                    FechaEvento = evento.Fecha,
+                    Fila = asiento.Fila,
+                    NumeroAsiento = asiento.Numero,
+                    Estado = EstadoSolicitud.PendienteDeEnvio
+                });
+
+                // La consulta resolvió lo que se pidió: es Ok, como cualquier otro estado.
+                return (ResultadoAuditoria.Ok, null);
+            }
+
             ResultadoEstadoSolicitud resultado = await _consultaEstado.ObtenerEstadoAsync(solicitud.Id);
 
             await _presenter.HandleAsync(new OutputDataResponse

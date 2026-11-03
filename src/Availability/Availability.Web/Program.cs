@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Availability.Gateways.Booking;
 using Availability.Presenters.ConsultarEstadoSolicitud;
 using ConsultarEstado = Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud;
+using ReintentarEnvio = Availability.UseCases.Solicitudes.ReintentarEnvio;
+using Availability.Web.Servicios;
 using Shared.Observability;
 
 
@@ -115,6 +117,13 @@ builder.Services.AddTransient<SolicitarReserva.Interfaces.IInputPort, SolicitarR
 builder.Services.AddTransient<SolicitarReservaController>();
 builder.Services.AddScoped<SolicitarReservaPresenter>();
 builder.Services.AddScoped<SolicitarReserva.Interfaces.IOutputPort>(sp => sp.GetRequiredService<SolicitarReservaPresenter>());
+
+// Caso de uso ReintentarEnvio (patrón Outbox). No tiene controller ni presenter: lo ejecuta
+// el servicio en segundo plano cada 15 segundos, que vuelve a publicar las solicitudes que
+// quedaron pendientes de envío porque el broker no respondió. AddHostedService arranca el
+// servicio junto con la aplicación y lo detiene cuando la aplicación se cierra.
+builder.Services.AddTransient<ReintentarEnvio.Interfaces.IInputPort, ReintentarEnvio.Interactor>();
+builder.Services.AddHostedService<ReintentoEnvioSolicitudesService>();
 
 var app = builder.Build();
 

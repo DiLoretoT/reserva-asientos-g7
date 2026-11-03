@@ -16,8 +16,9 @@ namespace Availability.UseCases.Interfaces
     {
         // Usa traceId como TraceId de todo lo que se registre a continuación en esta operación,
         // incluidas las llamadas a Booking. Lo usan los casos de uso cuyo TraceId, según el
-        // contrato, es el solicitudId (SolicitarReserva y ConsultarEstadoSolicitud). Los demás no
-        // lo llaman y usan el TraceId que el middleware generó para el pedido.
+        // contrato, es el solicitudId (SolicitarReserva, ReintentarEnvio y
+        // ConsultarEstadoSolicitud). Los demás no lo llaman y usan el TraceId que el middleware
+        // generó para el pedido.
         void AsociarTraza(Guid traceId);
 
         // Registra "[Inicio Operación]". operacion va en snake_case, por ejemplo

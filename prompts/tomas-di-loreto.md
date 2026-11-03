@@ -149,3 +149,18 @@ booking ya tiene mergeada su API , así que quiero un cliente http real hacia bo
 El seguimiento es un caso de uso nuevo, con la misma estructura que ListarAsientosDisponibles. Busca la solicitud en la bdd de availability con el ISolicituRepository de Mati, y si no existe o no es del usuario logueado, que no se muestre. Cada usuario ve solo sus solicitudes, y  el UsuarioId es el sub del token de keycloak. después le pregunta el estado a booking y si responde 404, la solicitud está en proceso, si responde 200 muestra el estado y el motivo del rechazo, y si booking no responde avisa que no se pudo consultar. La pág va en solicitudes/{id} y pide login, así cada usuario ve sus propias solicitudes. 
 Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura. Probalo con Booking levantado con su compose.yaml, con una solicitud que booking todavía no tiene, una confirmada, una rechazada, booking caído y una solicitud de otro usuario.
 Pasame el código por acá con los comentarios, yo lo escribo en el repo
+
+## 2026-11-02 22:17
+
+Ya está creada la branch feat/reintento-publicacion desde dev con el #88. Pasá al repo los cambios del Outbox que armaste, compilá y contame qué archivos cambiaste antes de que commitee.
+
+## 2026-11-02 22:20
+
+Ya mergeé el #88
+
+## 2026-11-02 22:23
+
+<!-- reply 1 -->
+> Recién consulté GitHub y el merge no aparece
+
+Lo había aprobado y me faltó mergear, ahora sí

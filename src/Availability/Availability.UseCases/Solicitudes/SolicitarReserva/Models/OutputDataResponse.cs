@@ -10,8 +10,8 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva.Models
 
         public Guid EventoId { get; set; }
 
-        // Solo tiene valor cuando el resultado es Recibida: es el número con el que el
-        // usuario va a seguir su solicitud (paso 7).
+        // Tiene valor cuando la solicitud quedó registrada (Recibida o PendienteDeEnvio): es
+        // el número con el que el usuario va a seguir su solicitud (paso 7).
         public Guid? SolicitudId { get; set; }
 
         // Fila y número del asiento pedido, para que el presenter pueda mostrar "asiento A2".
@@ -31,8 +31,8 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva.Models
         // El evento no existe o el asiento no pertenece al evento.
         AsientoInexistente,
 
-        // La solicitud no se pudo publicar porque el broker no respondió. No queda
-        // registrada y el usuario puede volver a intentarlo.
-        NoSePudoEnviar
+        // La solicitud se registró, pero el broker no respondió. Queda guardada como
+        // pendiente de envío y la reenvía el caso de uso ReintentarEnvio.
+        PendienteDeEnvio
     }
 }
