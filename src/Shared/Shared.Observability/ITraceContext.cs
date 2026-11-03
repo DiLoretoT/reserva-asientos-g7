@@ -1,16 +1,13 @@
 namespace Shared.Observability;
 
-public interface ITraceContext
-{
+public interface ITraceContext{
     string? TraceId { get; set; }
 }
 
-public sealed class TraceContext : ITraceContext
-{
+public sealed class TraceContext : ITraceContext{
     private static readonly AsyncLocal<string?> Actual = new();
 
-    public string? TraceId
-    {
+    public string? TraceId{
         get => Actual.Value;
         set => Actual.Value = value;
     }

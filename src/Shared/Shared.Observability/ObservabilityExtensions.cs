@@ -4,13 +4,13 @@ using Serilog;
 
 namespace Shared.Observability;
 
-public static class ObservabilityExtensions
-{
-    public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder, string servicio)
-    {
+public static class ObservabilityExtensions{
+    public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder, string servicio){
         builder.Services.AddSingleton<ITraceContext, TraceContext>();
         builder.Services.AddSingleton<IAuditLogger, AuditLogger>();
         builder.Services.AddSingleton<TraceIdEnricher>();
+        builder.Services.AddTransient<TraceIdHttpClientHandler>();
+        builder.Services.AddTransient<TraceIdGrpcClientInterceptor>();
 
         var seqUrl = builder.Configuration["Seq:ServerUrl"]
             ?? "http://localhost:5341";
