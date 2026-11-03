@@ -50,7 +50,25 @@ La primera prueba de publicar y consumir ya corrió contra el namespace y confir
 - La clave del integrante puede crear y borrar suscripciones de desarrollo: se creó y se borró `booking-facundo` sin errores.
 - El ciclo de ida y vuelta funciona: el mensaje de prueba llegó como copia a ambas suscripciones, se completó en las dos y `booking-facundo` quedó con 0 mensajes activos.
 
-`MaxDeliveryCount`, `LockDuration`, el TTL, sesiones y detección de duplicados quedan pendientes hasta la próxima corrida, que los lee de la entidad.
+## Valores verificados (2 de noviembre)
+
+Lectura de la entidad `booking` y del tópico contra el namespace real (solo lectura, nada modificado):
+
+| Parámetro | Valor real |
+|---|---|
+| `LockDuration` | 60 s |
+| `DefaultMessageTimeToLive` | 14 días |
+| `RequiresSession` | falso (sin sesiones) |
+| `DeadLetteringOnMessageExpiration` | falso |
+| Regla de la suscripción | `$Default` (`TrueRuleFilter`): entrega todo, sin filtro |
+| Detección de duplicados del tópico | desactivada |
+| Mensajes activos / en DLQ de `booking` | 0 / 0 |
+
+La clave del namespace permite crear y borrar suscripciones de desarrollo.
+
+`MaxDeliveryCount`: valor real 10 sobre el objetivo de 3. Se deja, y la pareja de Booking decide si el consumer fuerza la DLQ a la tercera entrega usando `DeliveryCount`.
+
+`MaxDeliveryCount`, `LockDuration`, el TTL, sesiones y detección de duplicados quedan cubiertos por esta lectura; el resto del balance queda pendiente de la próxima corrida.
 
 ## Acceso
 
@@ -58,5 +76,4 @@ Availability envía y Booking recibe; ningún otro servicio publica ni consume. 
 
 ## Pendientes
 
-- Los valores reales de la entidad (`MaxDeliveryCount`, `LockDuration`, TTL, sesiones, detección de duplicados): pendientes hasta la próxima corrida de la prueba.
 - Connection strings por máquina (dónde se guardan): a confirmar.
