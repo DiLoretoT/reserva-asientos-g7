@@ -71,6 +71,20 @@ Se agregan logs de auditoría para identificar el inicio y el fin de una cadena 
 
 Los microservicios deben autenticarse entre sí utilizando el servidor de autorización. 
 
+Authorization Server (Keycloak)
+Rol: autentica a los usuarios y a los servicios, y emite y firma los tokens. Tiene su propia base de datos.
+Justificación: el enunciado pide que el usuario obtenga un token antes de reservar y que los microservicios se autentiquen entre sí con este servidor. Al ser un servidor independiente, las APIs no guardan contraseñas: solo validan tokens firmados.
+
+3rd party Identity Provider (GitHub)
+Rol: autentica al usuario que elige iniciar sesión con su cuenta de GitHub.
+Justificación: figura en el diagrama. El usuario no necesita una contraseña propia en el sistema: GitHub confirma su identidad y Keycloak le emite su token, igual que a un usuario local. Los servicios no cambian.
+
+Servidor de autorización y proveedor de identidad externo
+
+Servidor: Keycloak 26.0.8, en Docker. Se usa un producto existente en lugar de programar el servidor, porque ya implementa OpenID Connect y OAuth 2.0, la emisión y firma de tokens y la gestión de usuarios. Tiene su propia base de datos. El detalle de cómo se piden y validan los tokens está en contracts/tokens.md.
+
+Proveedor externo: GitHub. Keycloak hace de intermediario (identity brokering): el usuario inicia sesión en GitHub y Keycloak le emite su propio token. Los servicios siempre reciben tokens de Keycloak y no dependen de GitHub. Se eligió porque todos los integrantes tienen cuenta y registrar la aplicación es simple
+
 ## 10. Notificaciones
 
 El sistema debe incorporar un servicio de notificaciones que informe al usuario cuando la reserva fue creada y confirmada luego de un pago exitoso.

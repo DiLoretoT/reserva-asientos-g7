@@ -10,7 +10,7 @@ La separación permite que cada componente tenga una responsabilidad definida y 
 
 El siguiente diagrama representa el flujo y las relaciones descritas en el enunciado. 
 
-```mermaid
+
 flowchart TD
     U[Usuario / Cliente]
     AUTH[Servidor de autorización]
@@ -37,7 +37,7 @@ flowchart TD
     A -->|Consulta estado| BK
     BK -->|Evento / aviso de confirmación| N
     N -->|Notificación| U
-```
+
 
 ## 3. Responsabilidad de cada componente
 
@@ -75,14 +75,14 @@ Informa al usuario cuando la reserva se encuentra creada y confirmada luego de q
 
 ## 4. Estados y ciclo de vida de una reserva
 
-```mermaid
+
 stateDiagram-v2
     [*] --> Retenida: asiento libre y reserva creada
     Retenida --> Confirmada: pago exitoso
     Retenida --> Rechazada: pago fallido / no disponible
     Retenida --> Vencida: vence el tiempo de retención
     [*] --> Rechazada: asiento ocupado
-```
+
 
 - **Retenida:** el asiento está apartado temporalmente mientras se procesa el pago.
 - **Confirmada:** el pago fue exitoso; el asiento queda reservado.

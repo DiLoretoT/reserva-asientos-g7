@@ -1,5 +1,4 @@
 ﻿using Payment.Business.DTO;
-using Payment.Domain.Entities;
 
 namespace Payment.Business.Interfaces
 {

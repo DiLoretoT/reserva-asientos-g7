@@ -51,6 +51,7 @@ namespace Payment.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("BookingId")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Currency")
@@ -60,10 +61,14 @@ namespace Payment.Data.Migrations
                     b.Property<string>("PaymentId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PaymentStatus")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique();
 
                     b.ToTable("Payment");
                 });

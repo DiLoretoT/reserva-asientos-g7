@@ -33,16 +33,22 @@ namespace Payment.Data.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    BookingId = table.Column<string>(type: "TEXT", nullable: true),
+                    BookingId = table.Column<string>(type: "TEXT", nullable: false),
                     PaymentId = table.Column<string>(type: "TEXT", nullable: true),
                     Amount = table.Column<decimal>(type: "TEXT", nullable: false),
                     Currency = table.Column<string>(type: "TEXT", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "INTEGER", nullable: false)
+                    PaymentStatus = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Payment", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payment_BookingId",
+                table: "Payment",
+                column: "BookingId",
+                unique: true);
         }
 
         /// <inheritdoc />
