@@ -37,7 +37,8 @@ namespace Availability.Gateways.Persistencia
                 EventoId = solicitud.EventoId,
                 AsientoId = solicitud.AsientoId,
                 UsuarioId = solicitud.UsuarioId,
-                FechaSolicitud = solicitud.FechaSolicitud
+                FechaSolicitud = solicitud.FechaSolicitud,
+                EstadoEnvio = solicitud.EstadoEnvio
             };
 
         public static SolicitudReservaDb APersistencia(this SolicitudReserva solicitud) =>
@@ -47,7 +48,8 @@ namespace Availability.Gateways.Persistencia
                 EventoId = solicitud.EventoId,
                 AsientoId = solicitud.AsientoId,
                 UsuarioId = solicitud.UsuarioId,
-                FechaSolicitud = solicitud.FechaSolicitud
+                FechaSolicitud = solicitud.FechaSolicitud,
+                EstadoEnvio = solicitud.EstadoEnvio
             };
     }
 }

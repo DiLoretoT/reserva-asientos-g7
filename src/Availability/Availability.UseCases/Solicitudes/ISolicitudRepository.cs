@@ -16,10 +16,13 @@ namespace Availability.UseCases.Solicitudes
         // (paso 7): si existe acá y Booking todavía no la tiene, se muestra "en proceso".
         Task<SolicitudReserva?> ObtenerAsync(Guid solicitudId);
 
-        // Borra una solicitud registrada. Lo usa SolicitarReserva como acción compensatoria
-        // cuando la solicitud se guardó pero no se pudo publicar en el broker: así no queda
-        // una solicitud que Booking nunca va a recibir y que el seguimiento mostraría "en
-        // proceso" para siempre.
-        Task EliminarAsync(Guid solicitudId);
+        // Hasta maximo solicitudes que siguen pendientes de envío y se registraron antes de
+        // registradasAntesDe, de la más vieja a la más nueva. Lo usa ReintentarEnvio. El
+        // límite de fecha deja afuera las recién creadas, que SolicitarReserva todavía puede
+        // estar publicando.
+        Task<List<SolicitudReserva>> ListarPendientesDeEnvioAsync(DateTime registradasAntesDe, int maximo);
+
+        // Marca la solicitud como enviada, después de que el broker confirmó la publicación.
+        Task MarcarEnviadaAsync(Guid solicitudId);
     }
 }

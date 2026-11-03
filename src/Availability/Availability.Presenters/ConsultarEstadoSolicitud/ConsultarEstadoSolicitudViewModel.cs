@@ -76,6 +76,9 @@ namespace Availability.Presenters.ConsultarEstadoSolicitud
         private static (string Texto, string Descripcion, string ClaseCss) Presentacion(EstadoSolicitud estado) =>
             estado switch
             {
+                EstadoSolicitud.PendienteDeEnvio => ("Pendiente de envío",
+                    "Tu solicitud quedó registrada, pero todavía no la pudimos enviar. Se va a enviar sola en cuanto el sistema de reservas responda.",
+                    "insignia--en-proceso"),
                 EstadoSolicitud.EnProceso => ("En proceso",
                     "Recibimos tu solicitud y todavía se está procesando. Volvé a consultar en unos minutos.",
                     "insignia--en-proceso"),

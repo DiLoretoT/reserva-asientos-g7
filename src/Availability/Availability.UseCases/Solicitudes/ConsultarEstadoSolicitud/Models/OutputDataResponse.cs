@@ -28,10 +28,12 @@ namespace Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud.Models
         public MotivoRechazo? Motivo { get; set; }
     }
 
-    // Estados de la solicitud para la pantalla. Suma dos más a los cuatro del contrato:
-    // EnProceso, cuando Booking respondió 404, y Desconocido, cuando Booking no respondió.
+    // Estados de la solicitud para la pantalla. Suma tres más a los cuatro del contrato:
+    // PendienteDeEnvio, cuando la solicitud todavía no salió hacia el broker, EnProceso, cuando
+    // Booking respondió 404, y Desconocido, cuando Booking no respondió.
     public enum EstadoSolicitud
     {
+        PendienteDeEnvio,
         EnProceso,
         Retenida,
         Confirmada,
