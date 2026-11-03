@@ -24,10 +24,11 @@ namespace Availability.Gateways.Broker
     //    vuelve a enviar, llega con el mismo MessageId y la idempotencia de Booking
     //    (la clave única sobre solicitudId) descarta el duplicado. ContentType y
     //    Subject salen del contrato del mensaje (contracts/broker.md, PR #85).
-    // 4. Reintentos: tres intentos con espera corta ante fallas transitorias. Si el
-    //    envío anterior realmente llegó, el reintento puede generar un duplicado;
-    //    la detección de duplicados del broker está desactivada y lo descarta la
-    //    clave única de Booking.
+    // 4. Reintentos: se sacaron a propósito. El cliente se crea con
+    //    ServiceBusRetryOptions cortas (un reintento, timeout de 10 s) y el
+    //    publicador hace un solo intento de envío: con ReintentarEnvio (issue #92,
+    //    mergeado) reenviando en segundo plano las solicitudes pendientes, acumular
+    //    reintentos acá solo haría esperar la página minutos por nada.
     // 5. false no significa "el mensaje no llegó": un timeout puede dejar el envío
     //    incierto (el mensaje pudo haber llegado). Qué hace Availability con una
     //    solicitud de envío incierto lo definen las parejas en el issue #85; hasta
@@ -65,36 +66,21 @@ namespace Availability.Gateways.Broker
                 Subject = "solicitud-reserva"
             };
 
-            for (int intento = 1; intento <= 3; intento++)
+            // Un solo intento en la llamada: el SDK ya ve con ReintentarEnvio (issue #92,
+            // mergeado) reenvía en segundo plano las solicitudes que quedan pendientes,
+            // así que acumular reintentos acá (este bucle y los del SDK) solo hace que
+            // el usuario espere minutos. false puede ser un envío incierto (ver punto 5
+            // del encabezado); el caso de uso lo maneja sin perder el pedido.
+            try
             {
-                try
-                {
-                    await _sender.SendMessageAsync(mensaje);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    // Los primeros dos intentos fallidos esperan un rato corto y
-                    // vuelven a intentar con el mismo mensaje (mismo MessageId). En
-                    // el tercer intento, sin espera: se informa false y listo.
-                    if (intento < 3)
-                    {
-                        var espera = TimeSpan.FromSeconds(intento);
-                        _logger.LogWarning(ex, "Intento {Intento}/3 de publicación de la solicitud {SolicitudId} falló; se reintenta en {Segundos} s.",
-                            intento, solicitud.Id, espera.TotalSeconds);
-                        await Task.Delay(espera);
-                        continue;
-                    }
-
-                    // Sin más reintentos: false puede ser un envío incierto, como explica
-                    // el encabezado de la clase (punto 5). El Interactor decide el destino.
-                    _logger.LogError(ex, "La solicitud {SolicitudId} no se pudo publicar tras 3 intentos.", solicitud.Id);
-                    return false;
-                }
+                await _sender.SendMessageAsync(mensaje);
+                return true;
             }
-
-            // Inalcanzable por el bucle, compilador exige un retorno.
-            return false;
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "La solicitud {SolicitudId} no se pudo publicar; queda pendiente de envío para ReintentarEnvio.", solicitud.Id);
+                return false;
+            }
         }
 
         // El contenedor la llama al cerrar la aplicación para liberar el sender.

@@ -92,7 +92,25 @@ namespace Availability.Gateways
             }
             else
             {
-                services.AddSingleton(_ => new ServiceBusClient(serviceBusConnectionString));
+                services.AddSingleton(_ =>
+                {
+                    // Reintentos cortos a propósito: ReintentarEnvio (issue #92, ya mergeado)
+                    // reenvía las solicitudes que quedaron pendientes, así que exponer al
+                    // usuario los reintentos por defecto del SDK (varios intentos con
+                    // timeouts largos) haría esperar la página minutos por nada. Un solo
+                    // intento con timeout corto devuelve el "no respondió" en segundos y
+                    // el reenvío en segundo plano hace el resto.
+                    var opciones = new ServiceBusClientOptions
+                    {
+                        RetryOptions = new ServiceBusRetryOptions
+                        {
+                            MaxRetries = 1,
+                            TryTimeout = TimeSpan.FromSeconds(10),
+                            Delay = TimeSpan.FromSeconds(1)
+                        }
+                    };
+                    return new ServiceBusClient(serviceBusConnectionString, opciones);
+                });
                 services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesServiceBus(
                     sp.GetRequiredService<ServiceBusClient>(),
                     serviceBusTopicName,
