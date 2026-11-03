@@ -8,6 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -18,6 +19,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Identifica la carpeta de User Secrets de este proyecto, que está fuera del repo,
+         en %APPDATA%\Microsoft\UserSecrets\<id>\secrets.json. El id no es secreto. -->
+    <UserSecretsId>d596dec0-5238-45b6-b272-5003ffdeebf1</UserSecretsId>
   </PropertyGroup>
 
 </Project>

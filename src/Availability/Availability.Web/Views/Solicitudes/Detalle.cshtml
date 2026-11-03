@@ -1,0 +1,74 @@
+@* Seguimiento de una solicitud (issue #5). La vista solo recorre el ViewModel: los textos de
+   cada estado, el motivo y las clases CSS vienen decididos por el presenter. *@
+@model Availability.Presenters.ConsultarEstadoSolicitud.ConsultarEstadoSolicitudViewModel
+
+@{
+    ViewData["Title"] = Model.SolicitudEncontrada ? "Tu solicitud" : "Solicitud no encontrada";
+}
+
+<a class="volver" asp-controller="Eventos" asp-action="Index">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    Todos los eventos
+</a>
+
+@if (!Model.SolicitudEncontrada)
+{
+    <div class="estado-vacio">
+        <h1 class="estado-vacio__titulo">Solicitud no encontrada</h1>
+        <p>@Model.MensajeNoEncontrada</p>
+        <a class="boton" asp-controller="Eventos" asp-action="Index">Ver los eventos</a>
+    </div>
+    return;
+}
+
+<h1 class="titulo-pagina">Tu solicitud</h1>
+<p class="subtitulo">@Model.NombreEvento</p>
+
+@if (Model.Aviso is not null)
+{
+    @* Mismo aviso que la página de asientos cuando Booking no responde. *@
+    <div class="aviso" role="status">
+        <svg class="aviso__icono" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M12 10v5M12 18v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        <div>
+            <p class="aviso__titulo">@Model.AvisoTitulo</p>
+            <p>@Model.Aviso</p>
+        </div>
+    </div>
+}
+
+<section class="solicitud" aria-labelledby="titulo-estado">
+    <div class="solicitud__estado">
+        <h2 id="titulo-estado" class="solo-lectores">Estado</h2>
+        <span class="insignia @Model.ClaseCss">@Model.EstadoTexto</span>
+        <p class="solicitud__descripcion">@Model.EstadoDescripcion</p>
+        @if (Model.MotivoTexto is not null)
+        {
+            <p class="solicitud__motivo"><strong>Motivo:</strong> @Model.MotivoTexto</p>
+        }
+    </div>
+
+    @* Lista de definiciones: cada dato con su nombre, que los lectores de pantalla leen
+       como pares. *@
+    <dl class="solicitud__datos">
+        <div>
+            <dt>Evento</dt>
+            <dd>@Model.NombreEvento</dd>
+        </div>
+        <div>
+            <dt>Fecha del evento</dt>
+            <dd>@Model.FechaEventoTexto</dd>
+        </div>
+        <div>
+            <dt>Asiento</dt>
+            <dd>@Model.AsientoTexto</dd>
+        </div>
+        <div>
+            <dt>Solicitud enviada</dt>
+            <dd>@Model.FechaSolicitudTexto</dd>
+        </div>
+        <div>
+            <dt>Número de solicitud</dt>
+            <dd class="solicitud__numero">@Model.NumeroSolicitud</dd>
+        </div>
+    </dl>
+</section>

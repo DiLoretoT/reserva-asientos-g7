@@ -31,5 +31,26 @@ namespace Availability.Gateways.Persistencia.Repositorios
 
             return solicitud?.ADominio();
         }
+
+        public async Task<List<SolicitudReserva>> ListarPendientesDeEnvioAsync(DateTime registradasAntesDe, int maximo)
+        {
+            var pendientes = await _db.Solicitudes
+                .AsNoTracking()
+                .Where(s => s.EstadoEnvio == EstadoEnvio.Pendiente && s.FechaSolicitud < registradasAntesDe)
+                .OrderBy(s => s.FechaSolicitud)
+                .Take(maximo)
+                .ToListAsync();
+
+            return pendientes.Select(s => s.ADominio()).ToList();
+        }
+
+        public async Task MarcarEnviadaAsync(Guid solicitudId)
+        {
+            // ExecuteUpdateAsync actualiza directo en la base con un UPDATE, sin cargar antes
+            // la solicitud en memoria.
+            await _db.Solicitudes
+                .Where(s => s.Id == solicitudId)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.EstadoEnvio, EstadoEnvio.Enviada));
+        }
     }
 }

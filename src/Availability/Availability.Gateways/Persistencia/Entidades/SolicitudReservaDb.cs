@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Availability.Entities.Solicitudes;
 
 namespace Availability.Gateways.Persistencia.Entidades
 {
@@ -24,5 +25,10 @@ namespace Availability.Gateways.Persistencia.Entidades
         public string UsuarioId { get; set; } = string.Empty;
 
         public DateTime FechaSolicitud { get; set; }
+
+        // Patrón Outbox: Pendiente hasta que el broker confirma la publicación. Se guarda como
+        // texto ("Pendiente", "Enviada") y no como número, así la tabla se entiende al leerla
+        // y agregar un valor al enum no cambia el significado de las filas guardadas.
+        public EstadoEnvio EstadoEnvio { get; set; }
     }
 }

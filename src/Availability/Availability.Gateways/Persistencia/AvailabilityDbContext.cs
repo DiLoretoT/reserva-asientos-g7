@@ -64,6 +64,16 @@ namespace Availability.Gateways.Persistencia
             modelBuilder.Entity<SolicitudReservaDb>()
                 .HasIndex(s => s.UsuarioId);
 
+            // Patrón Outbox: el estado de envío se guarda como texto, y un índice permite que
+            // ReintentarEnvio encuentre las pendientes sin recorrer toda la tabla.
+            modelBuilder.Entity<SolicitudReservaDb>()
+                .Property(s => s.EstadoEnvio)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            modelBuilder.Entity<SolicitudReservaDb>()
+                .HasIndex(s => s.EstadoEnvio);
+
             // SQLite guarda las fechas como texto y, al leerlas, Entity Framework no sabe
             // si eran UTC. Todas las fechas del sistema se guardan en UTC, así que este
             // conversor las marca como UTC al leerlas para que no se interpreten como hora

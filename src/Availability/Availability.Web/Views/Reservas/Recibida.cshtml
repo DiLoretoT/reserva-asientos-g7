@@ -1,0 +1,36 @@
+@* Página de solicitud recibida, a la que redirige ReservasController después de registrar y
+   publicar la solicitud (Post/Redirect/Get). Solo recorre el ViewModel: los textos vienen
+   decididos por Availability.Presenters. *@
+@model Availability.Presenters.SolicitarReserva.SolicitudRecibidaViewModel
+
+@{
+    ViewData["Title"] = Model.Titulo;
+}
+
+<div class="estado-vacio">
+    <h1 class="estado-vacio__titulo">@Model.Titulo</h1>
+
+    <p>
+        Número de solicitud: <strong>@Model.NumeroSolicitud</strong>
+        @if (Model.AsientoTexto is not null)
+        {
+            <br />@Model.AsientoTexto
+        }
+    </p>
+
+    @* role="status" hace que el lector de pantalla anuncie el mensaje al cargar la página. *@
+    <p role="status">@Model.Mensaje</p>
+
+    @* El seguimiento (issue #5) es lo que el usuario quiere hacer después de pedir el asiento,
+       por eso es el botón principal. Volver al mapa queda como enlace secundario. *@
+    <a class="boton" asp-controller="Solicitudes" asp-action="Detalle" asp-route-id="@Model.SolicitudId">Ver el estado</a>
+
+    @if (Model.EventoId is not null)
+    {
+        <a class="boton boton--texto" asp-controller="Eventos" asp-action="Asientos" asp-route-id="@Model.EventoId">Volver al mapa</a>
+    }
+    else
+    {
+        <a class="boton boton--texto" asp-controller="Eventos" asp-action="Index">Ver los eventos</a>
+    }
+</div>

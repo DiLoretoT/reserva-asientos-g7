@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Availability.UseCases\Availability.UseCases.csproj" />
+    <ProjectReference Include="..\Availability.Presenters\Availability.Presenters.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

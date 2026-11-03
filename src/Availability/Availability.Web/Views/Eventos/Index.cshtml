@@ -1,0 +1,42 @@
+@* Página de inicio: lista de eventos. Muestra lo que trae el ViewModel sin decidir textos
+   ni formatos de fecha. *@
+@model Availability.Presenters.ListarEventos.ListarEventosViewModel
+
+@{
+    ViewData["Title"] = "Eventos";
+}
+
+<h1 class="titulo-pagina">Eventos</h1>
+<p class="subtitulo">Elegí un evento para ver sus asientos.</p>
+
+@if (!Model.HayEventos)
+{
+    <div class="estado-vacio">
+        <p>@Model.MensajeSinEventos</p>
+    </div>
+    return;
+}
+
+<ul class="eventos">
+    @foreach (var evento in Model.Eventos)
+    {
+        <li>
+            <a class="tarjeta-evento" asp-action="Asientos" asp-route-id="@evento.EventoId">
+                @* El bloque de calendario es decorativo; la fecha completa va oculta para
+                   lectores de pantalla, que no interpretan "12 dic" como una fecha. *@
+                <div class="calendario" aria-hidden="true">
+                    <span class="calendario__dia">@evento.Dia</span>
+                    <span class="calendario__mes">@evento.Mes</span>
+                </div>
+                <div>
+                    <h2 class="tarjeta-evento__nombre">@evento.Nombre</h2>
+                    <p class="tarjeta-evento__fecha">
+                        <span aria-hidden="true">@evento.DiaYHora</span>
+                        <span class="solo-lectores">@evento.FechaCompleta</span>
+                    </p>
+                    <p class="tarjeta-evento__accion" aria-hidden="true">Ver asientos</p>
+                </div>
+            </a>
+        </li>
+    }
+</ul>
