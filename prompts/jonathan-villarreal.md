@@ -198,3 +198,57 @@ Después creá un PR hacia `dev`, asociado al issue #12, con un título claro y 
 - Pendientes: integración con Payment (#14/#15), concurrencia de Guillermo (#17) y acuerdo sobre `CompleteMessageAsync` (#44).
 
 No presentes esas dependencias como funcionalidades terminadas. No incluyas secretos ni identificadores sensibles en la descripción.
+
+## 2026-11-03 — Cobro por gRPC a Payment y resultado de la reserva (issues #14 y #15)
+
+Seguimos con Booking. El consumidor del broker ya está en el PR #94 (rama `feat/consumidor-servicebus-booking`). Ahora toca el paso 5 y 6 del enunciado: cobrar la reserva retenida a Payment por gRPC (#14) y confirmarla o rechazarla según el resultado.
+
+El objetivo de esta etapa es que Booking llame correctamente a Payment, procese el resultado y actualice la reserva de forma segura. La trazabilidad entre servicios y la auditoría quedan para cuando el flujo esté integrado: no agregues logs nuevos de auditoría, interceptores de traza ni cambios en `contracts/logs.md`.
+
+**Primero:**
+
+- Revisá `git status` y la rama actual. No descartes cambios.
+- Creá la rama `feat/cobro-grpc-payment` a partir de `feat/consumidor-servicebus-booking`.
+- Leé `docs/autorizacion.md` (sección 4, cliente gRPC con token de servicio), `contracts/tokens.md`, `contracts/broker.md`, `docs/booking-servicebus.md`, `Payment.proto` y el `PaymentService` de Payment, tanto en `dev` como en el PR #83 de Payment (rama `Payment2`).
+- No modifiques Payment, Shared.Auth, Shared.Observability ni `RetencionReservas` (concurrencia, #17). Si hace falta un cambio ahí, documentalo para coordinarlo.
+
+**Decisiones ya tomadas:**
+
+1. El `booking_id` que se manda a Payment es `Reserva.Id`. Es el mismo en todos los reintentos; nunca se genera uno nuevo.
+2. El monto sale de la configuración `Booking:MontoReserva`, con valor 1000. El mensaje del broker no trae monto.
+3. Pago `Approved` → reserva `confirmada`. Pago `Rejected` → reserva `rechazada` con `PagoFallido`. Si el `booking_id` de la respuesta no coincide con `Reserva.Id`, es un resultado incierto (decisión 5), nunca un pago aprobado.
+4. Payment no disponible → reserva `rechazada` con `PagoNoDisponible`, como dice el enunciado, solo cuando es seguro que Payment no recibió el pedido: no se pudo obtener el token de Keycloak, o la conexión fue rechazada (`Unavailable` cuyo error interno es un `SocketException` de conexión rechazada, porque Payment no está escuchando). El deadline de la llamada es configurable, 10 segundos, bastante menor que el lock de 60 segundos.
+5. Cualquier otro error es un resultado incierto, porque Payment pudo haber cobrado: `DeadlineExceeded`, un `Unavailable` por corte de la conexión durante la llamada, `Internal`, `Unknown`, `Unauthenticated` o un estado que no sea `Approved` ni `Rejected`. La reserva sigue `retenida` y el mensaje no se completa ni se abandona: Azure lo reentrega cuando vence el lock y se reintenta el cobro con el mismo `booking_id`. Abandonarlo lo reentregaría al instante y gastaría las entregas en segundos. El intervalo de reentrega no está garantizado y cada vencimiento del lock consume una entrega; con el máximo de 10 configurado en Azure, el mensaje podría terminar en la DLQ. Como la retención dura 5 minutos, lo normal es que la reserva venza antes y la siguiente reentrega se complete sin llamar a Payment. Documentá esta limitación.
+6. Confirmar y rechazar son actualizaciones condicionales: solo si la reserva sigue `retenida` y no venció, comparando con la hora de la base (`ExecuteUpdateAsync`, como `VencimientoReservas`). Antes de completar el mensaje, verificá el resultado de esa actualización. Si el pago se aprobó pero la reserva ya venció, no se confirma ni se trata como éxito: se completa el mensaje, se deja una línea simple con `ILogger` para que el caso no pase desapercibido, y se documenta como inconsistencia que requiere devolución, fuera del alcance actual de Payment. No agregues estados ni columnas para esto. La documentación tiene que dejar claro que la devolución no está implementada y que ese caso queda sin resolver, no presentarlo como un flujo completo.
+7. El mensaje de Azure se completa después de guardar el resultado final, y se elimina la pausa provisional del consumidor. Si llega una reentrega de una reserva retenida y vigente, se retoma el cobro con el mismo `booking_id`. Una reserva retenida cuya fecha de vencimiento ya pasó se trata como vencida aunque el proceso de vencimiento todavía no la haya marcado, igual que en `ConsultaReservas`: no se llama a Payment y se completa el mensaje. Si la reserva ya está confirmada, rechazada o vencida, también se completa sin llamar a Payment. Si la reserva vence después de un cobro cuyo resultado fue incierto, podría existir un pago aprobado que Booking no conoce. Como no existe una consulta ni conciliación de pagos, documentalo junto con la inconsistencia de la decisión 6 y no presentes la recuperación como resuelta del todo.
+8. Payment incorpora idempotencia por `BookingId` en el PR #83, pero no presupongas que cubre llamadas simultáneas ni pagos que quedaron `Pending`. Si detectás una limitación, documentala para revisarla con Payment, sin modificar Payment, y no presentes como garantizada la ausencia de cobros duplicados.
+
+**Implementación:**
+
+1. El acceso a Payment va en `Booking.Data`, como acceso a un servicio externo: agregá ahí `Grpc.Net.ClientFactory`, `Grpc.Tools` y `Google.Protobuf`, y generá el cliente referenciando `src/Payment/Payment.Grpc/Protos/Payment.proto` (`GrpcServices="Client"`, con `<Link>`). No copies ni modifiques el `.proto`: es de Payment (#42). El cliente devuelve un tipo propio con el resultado del pago, así `Booking.Business` no depende de los tipos generados por gRPC. El `.proto` se genera en un solo proyecto.
+2. En `Booking.Api/Program.cs`, registrá `AddGrpcClient<PaymentGrpc.PaymentGrpcClient>()` con la dirección `Payment:Address` (`http://localhost:5043`, HTTP/2 sin TLS), encadenado con `AddTokenDeServicio("payment-api")`.
+3. En `Booking.Business`, la orquestación: reserva retenida y vigente → cobrar → confirmar o rechazar. Reutilizá `ProcesamientoSolicitudReserva` y no dupliques las reglas de retención.
+4. En el manejador del broker, quitá la pausa y completá el mensaje o dejalo sin completar según las decisiones 4 a 7. No cambies el mecanismo de logs que ya existe: solo mapeá los resultados nuevos a los valores de `Resultado` y `Motivo` que ya usa.
+
+**Pruebas:**
+
+Levantá Keycloak (`src/Auth/keycloak`), `booking-db` y Payment en local. Para las pruebas de idempotencia, levantá Payment desde la rama del PR #83 en un worktree temporal, sin modificarla. Usá PostgreSQL real, no EF Core InMemory, y dejá los scripts de prueba fuera del repo.
+
+1. Pago aprobado → reserva `confirmada` y mensaje completado.
+2. `Booking:MontoReserva = 20000` → reserva `rechazada` con `pago_fallido`.
+3. Payment apagado → conexión rechazada → reserva `rechazada` con `pago_no_disponible`.
+4. Clasificación del resultado incierto: con un deadline de prueba muy corto, Booking no rechaza la reserva, que sigue `retenida`, y el mensaje no se completa ni se abandona.
+5. Recuperación con Payment real: cobrá primero un `booking_id` directamente contra Payment con su endpoint `/payment-test`, simulando que el cobro ocurrió y la respuesta se perdió, y después hacé que Booking procese esa reserva. Verificá si Payment devuelve el resultado ya guardado sin procesar un segundo pago. Si no lo garantiza, o no lo garantiza para pagos `Pending` o llamadas simultáneas, documentalo para coordinarlo con Payment. No modifiques Payment para que la prueba pase.
+6. Reserva retenida con la fecha de vencimiento pasada, antes de que corra el proceso de vencimiento → no se llama a Payment y el mensaje se completa.
+7. La reserva está vigente al iniciar el cobro pero vence antes de recibir el `Approved` (por ejemplo, con un doble del cliente de Payment que adelanta el vencimiento en la base antes de responder) → no se confirma, queda la línea de log y el mensaje se completa. No modifiques Payment.
+8. Booking obtiene el token de Keycloak con scope `payment-api` y lo manda en la llamada, aunque Payment todavía no lo valide.
+
+Si probás con Azure, usá solo `booking-jonathan`, IDs inventados que no existan en el catálogo, anotá los `MessageId` y limpiá solo tu suscripción y su DLQ.
+
+**Documentación:**
+
+Actualizá `docs/booking-servicebus.md`: sacá la pausa provisional y agregá el cobro, con el mismo formato que tiene ahora (secciones numeradas, tablas, "Por qué está hecho así"). Explicá qué errores de Payment se consideran seguros y cuáles inciertos, que los reintentos por vencimiento del lock no son ilimitados, y que con Payment caído a mitad de una llamada la reserva termina `vencida` en lugar de rechazada. Es documentación técnica, no una bitácora. En pendientes, anotá la trazabilidad entre servicios, las inconsistencias sin conciliación (pago aprobado con reserva vencida y pago incierto con reserva vencida; devolución no implementada) y lo que dependa de Payment.
+
+**Al finalizar:**
+
+Compilá toda la solución con 0 errores y 0 advertencias, revisá el diff y comprobá que no haya credenciales ni cambios fuera de Booking y su documentación. Registrá este prompt en mi historial. No hagas commit, push ni PR. Entregame un resumen de lo implementado, lo verificado y lo pendiente.

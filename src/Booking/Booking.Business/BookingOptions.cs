@@ -7,4 +7,5 @@ public class BookingOptions
     public int RetentionMinutes { get; set; }
 
     public int ExpirationIntervalSeconds { get; set; }
+    public decimal MontoReserva { get; set; }
 }
