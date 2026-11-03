@@ -149,3 +149,43 @@ booking ya tiene mergeada su API , así que quiero un cliente http real hacia bo
 El seguimiento es un caso de uso nuevo, con la misma estructura que ListarAsientosDisponibles. Busca la solicitud en la bdd de availability con el ISolicituRepository de Mati, y si no existe o no es del usuario logueado, que no se muestre. Cada usuario ve solo sus solicitudes, y  el UsuarioId es el sub del token de keycloak. después le pregunta el estado a booking y si responde 404, la solicitud está en proceso, si responde 200 muestra el estado y el motivo del rechazo, y si booking no responde avisa que no se pudo consultar. La pág va en solicitudes/{id} y pide login, así cada usuario ve sus propias solicitudes. 
 Los comentarios del código tienen que justificar las decisiones de diseño y de arquitectura. Probalo con Booking levantado con su compose.yaml, con una solicitud que booking todavía no tiene, una confirmada, una rechazada, booking caído y una solicitud de otro usuario.
 Pasame el código por acá con los comentarios, yo lo escribo en el repo
+
+## 2026-11-01 19:32
+
+Vamos a arrancar con los diagramas. Estoy en la branch que generé para availability. Lo que quiero hacer es generar un diagrama de clases de lo que armamos. No es necesario ser super puntillosos con los atributos, pongamos lo más significativo. 
+Quiero que arranquemos por el anillo uno de evento asiento y solicitudReserva. Armá una diagrama en docs/availability.md con los atributos significativos y las relaciones, en principio cada  evento tiene asientos y las solicitudes referencian a ambos por su id, no es composición. 
+
+Luego vamos sumando las otras capas. Empecemos por acá.
+
+## 2026-11-01 20:18
+
+ok, perfecto, seguimos con el anillo 2 de Use Cases. Agregalo en docs/availability.md debajo del anillo 1, con el mismo estilo de atributos y métodos significativos y todas las relaciones. Tiene que estar IPort<T> como base, los cuatro casos de uso (ListarEventos, ListarAsientosDisponibles, SolicitarReserva y ConsultarEstadoSolicitud) con su Interactor, IInputPort, IOutputPort, InputDataRequest y OutputDataResponse, y los puertos hacia afuera (IEventoRepository, ISolicitudRepository, IConsultaOcupacion, IConsultaEstadoSolicitud e IPublicadorSolicitudes) con sus modelos. Mostrá qué puerto usa cada Interactor y la relación con las entidades del anillo 1.
+
+veremos cómo queda y si se entiende bien, luego definimos por qué camino seguimos
+
+## 2026-11-01 20:54
+
+Bueno, en este caso voy a usar el text-to-speech para poder explicarte un poco más verbalmente la idea de lo que queremos lograr, porque realmente no me satisface lo que estuvimos haciendo con los diagramas de Mermaid, porque no veo bien la separación entre las distintas capas, los distintos anillos y demás. Lo que quiero que hagamos es lo siguiente. Primero, una vista general que sea un diagrama con los cuatro anillos de Clean Architecture, uno dentro del otro, donde iría Entities en el centro, después Use Cases, después Interface Adapters y Frameworks y Drivers afuera. En ese caso tendríamos que agrupar clases y sacarles los atributos y solamente mostrar las relaciones principales entre los anillos y clases. Y tiene que ser fácil entender el mapa general en una sola vista. Empecemos por acá, pero te anticipo que después vamos a ir con un diagrama por cada anillo, con las clases, los atributos y las relaciones. De manera que se pueda bajar un nivel de detalle. Y una tercera etapa va a ser un diagrama por cada caso de uso que muestre el recorrido completo de cada caso de uso por los cuatro anillos, con, si es posible, que quede bien visualmente también la separación entre los distintos anillos.
+
+## 2026-11-01 21:26
+
+quedó ampliamente mejor con SVG, vamos a seguir con los otros 2 niveles que te mencioné pero con este formato y estilo en lugar de mermaid. El doc quedaría con la vista general, después un diagrama por anillo y, al final, un diagrama por cada caso de uso. Por último me gustaría tener un diagrama general, más amplio, creo que html sería la mejor solución, para poder visualizar todos los anillo,s todas las clases y las relaciones reales entre todas ellas. Primero avanzá con esto y luego vamos con este último pedido
+
+## 2026-11-01 21:27
+
+los mermaids anteriores se pueden eliminar.
+
+## 2026-11-02 08:35
+
+Si, vamos con el html completo, quiero una forma más interactiva de recorrer la arquitectura de Availability, que me sirva como entregable y también para preparar la defensa. Armá un HTML con los cuatro anillos de Clean Architecture uno dentro del otro y todas las clases reales ubicadas en su anillo. Quiero poder moverme por el mapa arrastrando con el mouse y acercar con la rueda, que al hacer clic en una clase se resalten sus relaciones y se vean sus atributos, sus métodos y un enlace a su archivo en GitHub, y que haya un botón por cada caso de uso que ilumine su recorrido por los anillos. Tiene que entrar todo en una sola pantalla, con las cajas fijas y las letras grandes, y volver a tocar una selección tiene que deseleccionarla.
+
+## 2026-11-02 21:49
+
+Vamos con un cambio en SolicitarReserva que propuso Facundo en el PR 85, en el punto 2 de su review. Hoy, si PublicarAsync devuelve false, el Interactor borra la solicitud con EliminarAsync y responde NoSePudoEnviar. El problema es que un timeout no demuestra que Azure haya rechazado el mensaje, así que puede haber llegado igual, y Booking procesaría una reserva que Availability ya borró. Vamos a implementarlo de esta manera:
+
+Si la publicación fall la solicitud no se borra. Queda guardada y marcada como pendiente de envío. Al usuario se le muestra que la solicitud quedó registrada con su número, que se va a enviar cuando el broker responda, y que la puede seguir desde el seguimiento.
+Un proceso en segundo plano de Availability reintenta cada 15 segundos publicar las solicitudes pendientes, siempre con el mismo solicitudId, que es el MessageId del contrato, así Booking reconoce los reenvíos. Cuando una se publica, queda marcada como enviada. Tiene que respetar Clean Architecture, porque el reintento es un caso de uso propio, y el servicio en segundo plano vive en Availability.Web y lo ejecuta por su IInputPort, igual que los controllers.
+En el seguimiento, una solicitud pendiente de envío se muestra como tal, sin consultarle a Booking.
+Auditoría según contracts/logs, dice que solicitar_reserva con el broker caído sigue terminando en error con broker_no_disponible, y el reintento registra su propia operación con el solicitudId como TraceId, así la cadena de sucesos sigue unida. Sumá la operación nueva a la tabla de Availability en contracts/logs.md.
+
+Hace falta una migración para el dato nuevo de la solicitud. IPublicadorSolicitudes no cambia, porque el publicador real lo escribe Facundo. Esto arranca de dev con el 88 de Matías ya mergeado, que toca los mismos Interactors. Probalo con Broker:SimularSinRespuesta en true y después en false, para ver que la solicitud pendiente se envía sola. Es el patrón Outbox, donde la solicitud se guarda siempre en la base de Availability y un proceso aparte la publica cuando el broker responde. Dejalo explicado en los comentarios del Interactor y del servicio en segundo plano.
