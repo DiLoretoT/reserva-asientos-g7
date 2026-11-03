@@ -14,15 +14,9 @@ public class ManejadorSolicitudServiceBus(
     ILogger<ManejadorSolicitudServiceBus> logger)
 {
     private const string Operacion = "procesar_reserva";
-    private readonly TaskCompletionSource<Guid> pagoPendiente = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    public Task<Guid> PagoPendiente => pagoPendiente.Task;
 
     public async Task ProcesarAsync(ProcessMessageEventArgs args, CancellationToken stoppingToken)
     {
-        // StopProcessingAsync es externo al callback; puede llegar otra entrega antes de que termine.
-        if (pagoPendiente.Task.IsCompleted)
-            return;
-
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
             args.CancellationToken, stoppingToken);
         var token = cancellation.Token;
@@ -60,15 +54,15 @@ public class ManejadorSolicitudServiceBus(
                     motivo = "campo_invalido";
                     break;
                 case EstadoProcesamientoReserva.PendientePago:
-                    // No perder la solicitud ni agotar reentregas mientras Payment no esté integrado.
+                    // Payment pudo cobrar: esperar el lock, sin reentrega inmediata por Abandon.
                     motivo = "pago_pendiente";
-                    pagoPendiente.TrySetResult(validacion.Solicitud!.SolicitudId);
                     break;
                 case EstadoProcesamientoReserva.Finalizada:
                 case EstadoProcesamientoReserva.Rechazada:
                     await args.CompleteMessageAsync(args.Message, token);
-                    resultado = decision.Estado == EstadoProcesamientoReserva.Rechazada ? "rechazada" : "ok";
-                    motivo = decision.Motivo switch
+                    resultado = decision.PagoInconsistente ? "error"
+                        : decision.Estado == EstadoProcesamientoReserva.Rechazada ? "rechazada" : "ok";
+                    motivo = decision.PagoInconsistente ? "fallo_procesamiento" : decision.Motivo switch
                     {
                         MotivoRechazo.AsientoOcupado => "asiento_ocupado",
                         MotivoRechazo.PagoFallido => "pago_fallido",

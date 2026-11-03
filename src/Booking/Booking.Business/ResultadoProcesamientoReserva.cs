@@ -11,4 +11,5 @@ public enum EstadoProcesamientoReserva
 }
 
 public record ResultadoProcesamientoReserva(
-    EstadoProcesamientoReserva Estado, bool EsDuplicado, MotivoRechazo? Motivo = null);
+    EstadoProcesamientoReserva Estado, bool EsDuplicado, MotivoRechazo? Motivo = null,
+    bool PagoInconsistente = false);
