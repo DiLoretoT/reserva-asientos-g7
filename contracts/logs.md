@@ -65,6 +65,17 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 
 | Servicio | Operaciones auditadas |
 |---|---|
-| Availability | A definir |
+| Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `consultar_solicitud` (detalle abajo) |
 | Booking | A definir |
 | Payment | A definir |
+
+### Availability
+
+| `Operacion` | `TraceId` | `Resultado` y `Motivo` |
+|---|---|---|
+| `listar_eventos` | Guid nuevo por pedido | `ok` · `error` (`excepcion`) |
+| `listar_asientos` | Guid nuevo por pedido; viaja a Booking en `X-Trace-Id` | `ok` · `ok` con `ocupacion_no_disponible` si Booking no respondió (la página se muestra igual) · `rechazada` con `evento_inexistente` · `error` (`excepcion`) |
+| `solicitar_reserva` | El `solicitudId`, que Availability genera al empezar la operación | `ok` · `rechazada` con `asiento_inexistente` · `error` con `broker_no_disponible` o `excepcion` |
+| `consultar_solicitud` | El `solicitudId` consultado; viaja a Booking en `X-Trace-Id` | `ok` (cualquier estado, incluido "en proceso") · `rechazada` con `solicitud_inexistente` (también si es de otro usuario) · `error` con `booking_no_disponible` o `excepcion` |
+
+El `Motivo` se registra como propiedad aparte en la línea de fin. Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availability.Gateways` llama a `IAuditLogger`, porque `Shared.Observability` depende de ASP.NET Core y los casos de uso no pueden referenciarlo sin romper Clean Architecture.

@@ -10,9 +10,11 @@ namespace Availability.Gateways.Broker
     // Azure Service Bus. Implementa IPublicadorSolicitudes igual que lo va a hacer el
     // publicador real, así que reemplazarla es cambiar el registro en DependencyInjection.cs.
     //
-    // Arma el mismo mensaje que va a mandar el publicador real (SolicitudReservaMensaje, con
-    // MapeosBroker) y lo escribe en el log como JSON. Así se ve exactamente qué recibiría
-    // Booking, y la traducción al mensaje queda probada desde ahora.
+    // Arma y serializa el mismo mensaje que va a mandar el publicador real
+    // (SolicitudReservaMensaje, con MapeosBroker), así la traducción al mensaje queda probada
+    // desde ahora. En el log registra solo el identificador de la solicitud y el tamaño del
+    // mensaje: contracts/logs.md prohíbe loguear el cuerpo de los mensajes, porque puede
+    // contener datos personales (el mensaje lleva el usuarioId).
     public class PublicadorSolicitudesSimulado : IPublicadorSolicitudes
     {
         // Las mismas opciones que usa ASP.NET Core para JSON (JsonSerializerDefaults.Web):
@@ -43,11 +45,11 @@ namespace Availability.Gateways.Broker
                     throw new TimeoutException("Simulación: el broker no responde.");
                 }
 
-                string mensaje = JsonSerializer.Serialize(solicitud.AMensaje(), OpcionesJson);
+                byte[] mensaje = JsonSerializer.SerializeToUtf8Bytes(solicitud.AMensaje(), OpcionesJson);
 
                 _logger.LogInformation(
-                    "Simulación: se publicaría en el broker la solicitud {SolicitudId}: {Mensaje}",
-                    solicitud.Id, mensaje);
+                    "Simulación: se publicaría en el broker la solicitud {SolicitudId} ({Bytes} bytes)",
+                    solicitud.Id, mensaje.Length);
 
                 return Task.FromResult(true);
             }

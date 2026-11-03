@@ -19,26 +19,61 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
     // bloqueado mientras Booking retiene el asiento y cobra con Payment, y una demora o una
     // caída de Booking o de Payment se trasladaría a Availability. El resultado se consulta
     // después, con el seguimiento (paso 7).
+    //
+    // Auditoría (issue #9, contracts/logs.md): operación "solicitar_reserva". Según el
+    // contrato, su TraceId es el solicitudId, el mismo que viaja en el mensaje del broker. Así
+    // la cadena de sucesos se sigue con un solo identificador en Availability, Booking y Payment.
     public class Interactor : IInputPort
     {
+        private const string Operacion = "solicitar_reserva";
+
         private readonly IEventoRepository _eventoRepository;
         private readonly ISolicitudRepository _solicitudRepository;
         private readonly IPublicadorSolicitudes _publicador;
         private readonly IOutputPort _presenter;
+        private readonly IAuditoria _auditoria;
 
         public Interactor(
             IEventoRepository eventoRepository,
             ISolicitudRepository solicitudRepository,
             IPublicadorSolicitudes publicador,
-            IOutputPort presenter)
+            IOutputPort presenter,
+            IAuditoria auditoria)
         {
             _eventoRepository = eventoRepository;
             _solicitudRepository = solicitudRepository;
             _publicador = publicador;
             _presenter = presenter;
+            _auditoria = auditoria;
         }
 
         public async Task HandleAsync(InputDataRequest input)
+        {
+            // El identificador único de la solicitud se genera al empezar, antes de verificar el
+            // asiento, porque es el TraceId de toda la operación: así el inicio y el fin quedan
+            // con el mismo TraceId, y también queda trazado un pedido que termina rechazado
+            // (en ese caso el Id no llega a guardarse ni a publicarse).
+            Guid solicitudId = Guid.NewGuid();
+            _auditoria.AsociarTraza(solicitudId);
+            _auditoria.Inicio(Operacion);
+
+            // Arranca en Error: si algo lanza una excepción (por ejemplo, la base de Availability
+            // caída), el finally registra el fin igual y la excepción sigue su camino.
+            ResultadoAuditoria resultado = ResultadoAuditoria.Error;
+            string? motivo = "excepcion";
+
+            try
+            {
+                (resultado, motivo) = await SolicitarAsync(input, solicitudId);
+            }
+            finally
+            {
+                _auditoria.Fin(Operacion, resultado, motivo);
+            }
+        }
+
+        // El trabajo del caso de uso. Devuelve cómo terminó, para que HandleAsync lo audite.
+        private async Task<(ResultadoAuditoria Resultado, string? Motivo)> SolicitarAsync(InputDataRequest input, Guid solicitudId)
         {
             // 1. El asiento tiene que existir en el evento (paso 3: "verifica que el asiento
             // exista"). Si el evento no existe, evento es null y asiento también.
@@ -52,7 +87,7 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
                     Resultado = ResultadoSolicitud.AsientoInexistente,
                     EventoId = input.EventoId
                 });
-                return;
+                return (ResultadoAuditoria.Rechazada, "asiento_inexistente");
             }
 
             // No se verifica si el asiento está libre. Availability no es el dueño de las
@@ -64,10 +99,10 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
 
             // 2. La solicitud con su identificador único. El Guid lo genera Availability y no
             // la base, porque viaja en el mensaje del broker y con él se le consulta después
-            // el estado a Booking.
+            // el estado a Booking. Es el que se generó al empezar la operación (el TraceId).
             var solicitud = new SolicitudReserva
             {
-                Id = Guid.NewGuid(),
+                Id = solicitudId,
                 EventoId = input.EventoId,
                 AsientoId = input.AsientoId,
                 UsuarioId = input.UsuarioId,
@@ -106,7 +141,7 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
                     Fila = asiento.Fila,
                     Numero = asiento.Numero
                 });
-                return;
+                return (ResultadoAuditoria.Error, "broker_no_disponible");
             }
 
             // 5. Se entrega el resultado sin esperar a Booking.
@@ -118,6 +153,7 @@ namespace Availability.UseCases.Solicitudes.SolicitarReserva
                 Fila = asiento.Fila,
                 Numero = asiento.Numero
             });
+            return (ResultadoAuditoria.Ok, null);
         }
     }
 }

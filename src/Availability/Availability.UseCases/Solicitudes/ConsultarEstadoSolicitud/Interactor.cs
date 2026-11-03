@@ -11,26 +11,57 @@ namespace Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud
     // Interactor del caso de uso ConsultarEstadoSolicitud. Combina la solicitud 
     // registrada en la base de Availability, que dice qué se pidió y de quién es,
     //  y el estado que informa Booking, el dueño de las reservas.
+    //
+    // Auditoría (issue #9, contracts/logs.md, Matías De La Rosa): operación
+    // "consultar_solicitud". Su TraceId es el solicitudId consultado: el cliente de Booking lo
+    // manda en el header X-Trace-Id, así la consulta queda unida en los logs con todo lo que
+    // pasó con esa solicitud en Availability, Booking y Payment.
     public class Interactor : IInputPort
     {
+        private const string Operacion = "consultar_solicitud";
+
         private readonly ISolicitudRepository _solicitudRepository;
         private readonly IEventoRepository _eventoRepository;
         private readonly IConsultaEstadoSolicitud _consultaEstado;
         private readonly IOutputPort _presenter;
+        private readonly IAuditoria _auditoria;
 
         public Interactor(
             ISolicitudRepository solicitudRepository,
             IEventoRepository eventoRepository,
             IConsultaEstadoSolicitud consultaEstado,
-            IOutputPort presenter)
+            IOutputPort presenter,
+            IAuditoria auditoria)
         {
             _solicitudRepository = solicitudRepository;
             _eventoRepository = eventoRepository;
             _consultaEstado = consultaEstado;
             _presenter = presenter;
+            _auditoria = auditoria;
         }
 
         public async Task HandleAsync(InputDataRequest input)
+        {
+            _auditoria.AsociarTraza(input.SolicitudId);
+            _auditoria.Inicio(Operacion);
+
+            // Arranca en Error: si algo lanza una excepción (por ejemplo, la base inconsistente),
+            // el finally registra el fin igual y la excepción sigue su camino.
+            ResultadoAuditoria resultadoAuditoria = ResultadoAuditoria.Error;
+            string? motivo = "excepcion";
+
+            try
+            {
+                (resultadoAuditoria, motivo) = await ConsultarAsync(input);
+            }
+            finally
+            {
+                _auditoria.Fin(Operacion, resultadoAuditoria, motivo);
+            }
+        }
+
+        // El trabajo del caso de uso. Devuelve cómo terminó, para que HandleAsync lo audite.
+        private async Task<(ResultadoAuditoria Resultado, string? Motivo)> ConsultarAsync(InputDataRequest input)
         {
             SolicitudReserva? solicitud = await _solicitudRepository.ObtenerAsync(input.SolicitudId);
 
@@ -44,7 +75,10 @@ namespace Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud
                     SolicitudEncontrada = false,
                     SolicitudId = input.SolicitudId
                 });
-                return;
+
+                // En la auditoría también se registran igual la inexistente y la ajena, con el
+                // mismo criterio que la pantalla.
+                return (ResultadoAuditoria.Rechazada, "solicitud_inexistente");
             }
 
             // El evento y el asiento salen de la base de Availability. La solicitud los referencia
@@ -69,6 +103,12 @@ namespace Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud
                 Estado = CalcularEstado(resultado),
                 Motivo = resultado.RespuestaOk && resultado.Procesada ? resultado.Motivo : null
             });
+
+            // Cualquier estado que informe Booking, incluido "en proceso" (404), es un resultado
+            // Ok de la consulta. Es Error solo si Booking no respondió.
+            return resultado.RespuestaOk
+                ? (ResultadoAuditoria.Ok, null)
+                : (ResultadoAuditoria.Error, "booking_no_disponible");
         }
 
         // Traduce la respuesta de Booking al estado de la pantalla. El 404 de Booking no 
