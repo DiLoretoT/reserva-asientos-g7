@@ -190,7 +190,7 @@ Los casos de uso registran el inicio y el fin de su operación con `IAuditoria`.
 | Operación | `TraceId` | Resultados posibles |
 |---|---|---|
 | `listar_eventos` | Es el `TraceId` de la petición HTTP. | Termina en `ok` o en `error`. |
-| `listar_asientos` | Es el `TraceId` de la petición HTTP, que `ClienteBooking` envía a Booking en el header `X-Trace-Id`. | Termina en `ok`, en `ok` con el motivo `ocupacion_no_disponible`, en `rechazada` con `evento_inexistente` o en `error`. |
+| `listar_asientos` | Es el `TraceId` de la petición HTTP, que viaja a Booking en el header `X-Trace-Id`. | Termina en `ok`, en `ok` con el motivo `ocupacion_no_disponible`, en `rechazada` con `evento_inexistente` o en `error`. |
 | `solicitar_reserva` | Es el `solicitudId`. | Termina en `ok`, en `rechazada` con `asiento_inexistente` o en `error` con `broker_no_disponible`, y en ese caso la solicitud queda pendiente de envío. |
 | `reintentar_envio` | Es el `solicitudId` de la solicitud que se reenvía. | Termina en `ok` cuando el broker confirma, o en `error` con `broker_no_disponible` si la solicitud sigue pendiente. |
 | `consultar_solicitud` | Es el `solicitudId` consultado. | Termina en `ok`, en `rechazada` con `solicitud_inexistente` o en `error` con `booking_no_disponible`. |

@@ -10,7 +10,18 @@ Esta separación permite asignar responsabilidades específicas a cada servicio 
 
 Availability debe organizarse siguiendo Clean Architecture. El objetivo del patrón es separar las reglas y casos de uso de los detalles externos, como HTTP, persistencia o mensajería.
 
-**Documentar aquí las capas y dependencias concretas que se hayan implementado en el servicio.**
+Cada proyecto de .NET pertenece a un anillo, y una clase solo puede usar clases de otro proyecto si su `.csproj` tiene la referencia.
+
+| Anillo | Proyecto | Referencia a |
+|---|---|---|
+| 1, Entities | `Availability.Entities` | Ningún proyecto |
+| 2, Use Cases | `Availability.UseCases` | `Availability.Entities` |
+| 3, Interface Adapters | `Availability.Presenters` | `Availability.UseCases` |
+| 3, Interface Adapters | `Availability.Controllers` | `Availability.UseCases` y `Availability.Presenters` |
+| 3, Interface Adapters | `Availability.Gateways` | `Availability.UseCases` y `Shared.Observability` |
+| 4, Frameworks & Drivers | `Availability.Web` | `Availability.Controllers`, `Availability.Presenters`, `Availability.Gateways` y `Shared.Observability` |
+
+El anillo 2 define las interfaces que necesita, y las clases de `Availability.Gateways` las implementan para acceder a la base, a Booking, al broker y a los logs. Los casos de uso registran la auditoría con su propia interfaz, `IAuditoria`, porque `Shared.Observability` depende de ASP.NET Core y el anillo 2 solo puede depender del anillo 1. El detalle de cada archivo está en [`../Microservicios/Availability.md`](../Microservicios/Availability.md).
 
 ## 3. Arquitectura N-Layer en Booking y Payment
 
@@ -56,7 +67,7 @@ gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los s
 
 | Servicio     | Motor     | Ubicación                                               |
 |--------------|-----------|---------------------------------------------------------|
-| Availability | Completar | Completar                                               |
+| Availability | SQLite    |`Availability/Availability.Gateways/DependencyInjection.cs`|
 | Booking      | Completar | Completar                                               |
 | Payment      | SQLite    |`Payment/Payment.Data/Persintence/DependencyInjection.cs`|
 
@@ -65,6 +76,8 @@ gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los s
 Se agregan logs de auditoría para identificar el inicio y el fin de una cadena de sucesos en cada microservicio. Esto permite reconstruir el recorrido de una solicitud y analizar resultados o errores.
 
 **Documentar el formato, destino y campos de los registros reales.**
+
+Availability escribe logs estructurados con Serilog, por medio de `Shared.Observability`, en la consola y en Seq. Los campos y las operaciones están en [`contracts/logs.md`](../../contracts/logs.md).
 
 
 ## 9. Autenticación entre microservicios
@@ -96,3 +109,11 @@ El sistema debe incorporar un servicio de notificaciones que informe al usuario 
 La solicitud puede haber sido recibida por Availability mientras todavía está pendiente de procesamiento en Booking. Por ello, la respuesta inicial indica recepción, no confirmación.
 
 El estado se vuelve consistente con el resultado del procesamiento cuando Booking termina de gestionar la reserva y el pago. Documentar también cómo se manejan los mensajes duplicados, errores, reintentos y vencimientos si esas funcionalidades están implementadas.
+
+### Reintento del envío en Availability
+
+Availability aplica el patrón Outbox. Guarda la solicitud como pendiente de envío antes de publicarla y la marca como enviada cuando el broker confirma. Si el broker no confirma, la solicitud queda pendiente, y un servicio en segundo plano revisa cada 15 segundos las solicitudes pendientes y reenvía las que se registraron hace más de 90 segundos.
+
+La alternativa era borrar la solicitud y pedirle al usuario que volviera a intentarlo. Se descartó porque un timeout no demuestra que el broker haya rechazado el mensaje. Si el mensaje hubiera llegado, Booking procesaría una reserva que Availability ya no conoce y que el usuario no podría seguir.
+
+Cada reenvío conserva el mismo `solicitudId`, que también es el `MessageId` del mensaje, y Booking usa ese identificador para no procesar dos veces la misma solicitud.
