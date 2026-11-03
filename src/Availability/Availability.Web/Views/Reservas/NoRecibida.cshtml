@@ -1,5 +1,6 @@
-@* Resultado de una solicitud que no se registró: el asiento no existe o el broker no
-   respondió. Los textos y si conviene reintentar vienen decididos por el presenter. *@
+@* Resultado de una solicitud que no se registró porque el asiento no existe. Con el broker
+   caído la solicitud igual queda registrada (patrón Outbox), así que ese caso va a la página
+   de solicitud recibida. Los textos vienen decididos por el presenter. *@
 @model Availability.Presenters.SolicitarReserva.SolicitarReservaViewModel
 
 @{
@@ -18,6 +19,6 @@
     <p role="alert">@Model.Mensaje</p>
 
     <a class="boton" asp-controller="Eventos" asp-action="Asientos" asp-route-id="@Model.EventoId">
-        @(Model.PuedeReintentar ? "Volver a intentar" : "Volver al mapa")
+        Volver al mapa
     </a>
 </div>

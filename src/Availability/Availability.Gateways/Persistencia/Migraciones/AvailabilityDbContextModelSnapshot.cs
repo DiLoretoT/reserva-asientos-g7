@@ -778,6 +778,11 @@ namespace Availability.Gateways.Persistencia.Migraciones
                     b.Property<Guid>("AsientoId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EstadoEnvio")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("EventoId")
                         .HasColumnType("TEXT");
 
@@ -792,6 +797,8 @@ namespace Availability.Gateways.Persistencia.Migraciones
                     b.HasKey("Id");
 
                     b.HasIndex("AsientoId");
+
+                    b.HasIndex("EstadoEnvio");
 
                     b.HasIndex("EventoId");
 

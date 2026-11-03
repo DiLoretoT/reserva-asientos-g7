@@ -189,3 +189,18 @@ En el seguimiento, una solicitud pendiente de envío se muestra como tal, sin co
 Auditoría según contracts/logs, dice que solicitar_reserva con el broker caído sigue terminando en error con broker_no_disponible, y el reintento registra su propia operación con el solicitudId como TraceId, así la cadena de sucesos sigue unida. Sumá la operación nueva a la tabla de Availability en contracts/logs.md.
 
 Hace falta una migración para el dato nuevo de la solicitud. IPublicadorSolicitudes no cambia, porque el publicador real lo escribe Facundo. Esto arranca de dev con el 88 de Matías ya mergeado, que toca los mismos Interactors. Probalo con Broker:SimularSinRespuesta en true y después en false, para ver que la solicitud pendiente se envía sola. Es el patrón Outbox, donde la solicitud se guarda siempre en la base de Availability y un proceso aparte la publica cuando el broker responde. Dejalo explicado en los comentarios del Interactor y del servicio en segundo plano.
+
+## 2026-11-02 22:17
+
+Ya está creada la branch feat/reintento-publicacion desde dev con el #88. Pasá al repo los cambios del Outbox que armaste, compilá y contame qué archivos cambiaste antes de que commitee.
+
+## 2026-11-02 22:20
+
+Ya mergeé el #88
+
+## 2026-11-02 22:23
+
+<!-- reply 1 -->
+> Recién consulté GitHub y el merge no aparece
+
+Lo había aprobado y me faltó mergear, ahora sí
