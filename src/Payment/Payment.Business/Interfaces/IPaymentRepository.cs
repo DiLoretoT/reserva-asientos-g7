@@ -6,5 +6,6 @@ namespace Payment.Business.Interfaces
     {
         Task SaveAsync(MyPayment payment);
         Task UpdateAsync(MyPayment payment);
+        Task<MyPayment?> GetByBookingIdAsync(string bookingId);
     }
 }

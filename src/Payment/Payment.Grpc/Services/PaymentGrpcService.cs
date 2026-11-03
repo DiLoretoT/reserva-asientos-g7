@@ -1,5 +1,4 @@
 ﻿using Grpc.Core;
-using Microsoft.AspNetCore.Authorization;
 using Payment.Business.Services;
 
 

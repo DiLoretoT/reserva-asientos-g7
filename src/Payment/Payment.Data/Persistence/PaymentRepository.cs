@@ -1,4 +1,5 @@
-﻿using Payment.Business.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Payment.Business.Interfaces;
 using Payment.Domain.Entities;
 
 namespace Payment.Data.Persistence
@@ -19,5 +20,6 @@ namespace Payment.Data.Persistence
             _dbContext.Payment.Update(payment);
             await _dbContext.SaveChangesAsync();
         }
+        public async Task<MyPayment?> GetByBookingIdAsync(string bookingId) => await _dbContext.Payment.FirstOrDefaultAsync(p => p.BookingId == bookingId);
     }
 }
