@@ -1,4 +1,4 @@
-# Booking: dominio y PostgreSQL (PR 1)
+# Booking: dominio, PostgreSQL y vencimientos
 
 ## Inicio rápido
 
@@ -13,7 +13,7 @@ dotnet run --project src/Booking/Booking.Api --launch-profile http --no-build
 ```
 
 Booking escucha en `http://localhost:5127`; en Development expone `/openapi/v1.json`.
-Todavía no tiene endpoints de reservas. Docker crea la base; al iniciar en Development la API ejecuta
+Incluye las consultas REST de ocupación y estado de solicitud. Docker crea la base; al iniciar en Development la API ejecuta
 `Database.Migrate()` para crear el esquema y aplicar migraciones pendientes. Los siguientes arranques
 consultan el historial de EF y no repiten migraciones aplicadas. Fuera de Development no las aplica.
 
@@ -55,16 +55,16 @@ Para detener sin perder datos: `docker compose stop booking-db`. Para reiniciar:
 ```text
 src/Booking/
   Booking.Domain/    Reserva.cs, EstadoReserva.cs, MotivoRechazo.cs
-  Booking.Business/ BookingOptions.cs
+  Booking.Business/ BookingOptions.cs, ConsultaReservas.cs, RetencionReservas.cs, VencimientoReservas.cs
   Booking.Data/     BookingDbContext.cs
                     Migrations/*_Inicial.cs, *_Inicial.Designer.cs, BookingDbContextModelSnapshot.cs
-  Booking.Api/      Program.cs, BookingJson.cs, appsettings*.json, Properties/
+  Booking.Api/      Program.cs, BookingJson.cs, VencimientoReservasService.cs, Controllers/, appsettings*.json, Properties/
 ```
 
 Cada capa conserva su proyecto existente. Domain contiene solo datos; `Estado` es obligatorio al
-construir una reserva para evitar asumir que toda solicitud se retiene. Business define las opciones;
+construir una reserva para evitar asumir que toda solicitud se retiene. Business define las reglas y opciones;
 `Booking:RetentionMinutes = 5` está centralizado en `appsettings.json`, validado como positivo al iniciar.
-No calcula vencimientos ni implementa transiciones todavía.
+La lógica de retención se conserva; el vencimiento automático se describe debajo.
 
 La API registra `BookingDbContext` con `AddDbContext` y `UseNpgsql`: una instancia por ámbito.
 El contexto expone `DbSet<Reserva>` y declara todo el mapeo en `OnModelCreating`, sin atributos de EF
@@ -159,10 +159,41 @@ esquema completo, revisión de usuarios con más de 200 caracteres, aplicación 
 de la migración solo cuando el esquema coincida. Esa adopción no está automatizada ni se ejecutó
 sobre la base existente en esta corrección; no marcar `Inicial` aplicada sin verificar el esquema.
 
-**Limitación:** una retención vencida por hora sigue ocupando el índice mientras conserve estado
-`retenida`. El contrato REST exige informar el asiento libre/estado vencido desde esa hora; PR 2 debe
-resolver las consultas y la liberación transaccional usando el reloj de PostgreSQL. Este PR no implementa
-el worker, las consultas REST ni la lógica completa de concurrencia.
+## Vencimiento automático
+
+`VencimientoReservasService` se inicia con Booking en cualquier entorno y ejecuta un ciclo cada
+15 segundos, sin depender de llamadas HTTP. El primer ciclo ocurre después del intervalo.
+Se configura al iniciar con `Booking:ExpirationIntervalSeconds` en `appsettings.json` o la variable
+`Booking__ExpirationIntervalSeconds` (entero entre 1 y 4294967 segundos, límite del temporizador).
+
+Cada ciclo crea y libera un ámbito de dependencias con su propio `BookingDbContext` y llama a
+`VencimientoReservas.VencerAsync`. EF Core ejecuta un único `UPDATE`, sin cargar entidades ni llamar
+a `SaveChanges`: filtra `estado = 'retenida' AND fecha_vencimiento <= now()` y asigna `estado = 'vencida'`
+y `fecha_actualizacion = now()`. Ambas expresiones `DateTime.UtcNow` permanecen dentro de la consulta
+y Npgsql las traduce al reloj de PostgreSQL. No se modifican confirmadas, rechazadas, vencidas ni
+retenciones futuras, ni las demás columnas.
+
+Los ciclos de una instancia no se superponen. Entre réplicas, el `UPDATE` condicionado y los bloqueos
+de PostgreSQL evitan vencer dos veces la misma reserva; una ejecución posterior ya no la selecciona
+ni vuelve a cambiar su fecha. Al pasar a `vencida` sale del índice único parcial y permite otra reserva
+activa para ese asiento. La liberación persistida ocurre al procesar el ciclo; las consultas REST ya
+informan el vencimiento desde su hora, aunque el ciclo todavía no haya corrido.
+
+El servicio propaga la cancelación al temporizador y a EF Core. Los errores transitorios de base de
+datos y los timeouts se reintentan en el siguiente ciclo; otros errores se propagan al host. Este cambio
+no agrega logs ni auditoría, endpoints, tablas o migraciones, ni cambia `RetencionReservas`.
+
+Verificado con PostgreSQL 17.11 aislado y herramientas temporales fuera del repositorio:
+
+- Retenidas con vencimiento pasado o exactamente igual a `now()` pasan a `vencida`; las demás
+  reservas y columnas quedan intactas. `fecha_actualizacion` coincide con la hora de PostgreSQL.
+- Dos ejecuciones bloqueadas sobre la misma fila la vencen una sola vez; si se confirma antes de
+  liberar el bloqueo, ninguna sobrescribe esa confirmación. Repetir no cambia la fecha otra vez.
+- La lógica existente de retención puede reservar nuevamente el asiento liberado.
+- Servicio con ámbitos validados, cancelación limpia y recuperación del siguiente ciclo tras timeout.
+- API real, sin requests HTTP: ciclo predeterminado de 15 segundos, repetición sin cambios y rechazo
+  de intervalo cero. No hay cambios de modelo que requieran migraciones.
+- Restore y build de los 16 proyectos: cero errores y advertencias. Sin tests permanentes.
 
 ## Verificaciones manuales
 
@@ -201,13 +232,13 @@ y un puerto aleatorio; no se modificó la base habitual:
 Las comprobaciones de EF se ejecutaron desde un programa temporal externo a la solución, sin
 incorporar infraestructura de tests permanente al repositorio.
 
-## Pendiente para PR 2 y revisión humana
+## Pendiente de integración y revisión humana
 
-Procesamiento del broker e idempotencia, repositorios/transacciones de reserva, vencimientos,
-REST conforme a contratos, gRPC/Payment, autenticación y trazabilidad compartida. Acordar también
+Procesamiento del broker e idempotencia completa, gRPC/Payment, integración de autenticación
+y trazabilidad compartida en Booking. Acordar también
 el transporte de `UsuarioId` en el mensaje: el token entre servicios identifica a Availability.
-`contracts/tokens.md` menciona `Shared.Auth`, todavía ausente en esta base de dev. No existen aún
-contratos de mensajería, Payment u observabilidad en `contracts/`; revisarlos cuando se integren.
+`Shared.Auth` y `Shared.Observability` ya están en `dev`; sus contratos son `contracts/tokens.md`
+y `contracts/logs.md`. Su integración en Booking queda fuera del cambio de vencimientos.
 
 El registro de prompts del integrante está en `prompts/jonathan-villarreal.md`.
 No se tocaron los prompts de otros integrantes.

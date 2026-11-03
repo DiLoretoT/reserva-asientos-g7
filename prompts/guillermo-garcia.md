@@ -49,3 +49,24 @@ Hacé la prueba que sea de manera temporal fuera del repositorio, para no agrega
 Además verificá que el proyecto compile sin errores ni advertencias y que no se haya cambiado nada del código que ya funcionaba.
 
 No hagas commit ni push.
+
+## 2026-11-01 10:20
+
+Armá una rama nueva feat/auth-booking a partir de dev, y antes de tocar nada hacé el pull de dev. La validación de token Booking tiene que aceptar solo llamadas con un token válido de Keycloak. La parte de Keycloak y la librería Shared.Auth ya las hicieron los chicos de Autorización y ya están en dev.
+
+Antes de escribir nada leé contracts/tokens.md, que dice qué valida el servicio que recibe el token y qué responde cuando no sirve. Leé también Shared.Auth, sobre todo AddValidacionKeycloak, el Program.cs de Booking, el ReservasController y el appsettings.json. Fijate qué ya está hecho antes de agregar algo, porque la sección Keycloak del appsettings ya está en dev y no quiero duplicarla.
+
+Lo que quiero es esto. Booking.Api tiene que usar Shared.Auth. En el Program.cs hay que llamar a AddValidacionKeycloak y poner UseAuthentication y UseAuthorization. Y el ReservasController tiene que llevar Authorize, así los dos endpoints que consulta Availability quedan protegidos.
+
+No toques Shared.Auth, ni Availability, ni Payment. La llamada gRPC de Booking a Payment todavía no existe, así que el token de servicio hacia Payment queda para cuando se haga. Que compile sin errores ni advertencias.
+
+No hagas commit ni push.
+
+## 2026-11-01 11:05
+
+Ahora quiero probar que funciona, no solo que compile. Mi compañero de Autorización me pasó cómo probarlo: con Keycloak y la base de Booking levantados, se pide un token a Keycloak, y con ese token se llama a un endpoint de Booking. Con token tiene que responder bien, y sin el header tiene que dar 401. Además en la consola de Booking tienen que aparecer los logs de token aceptado y de solicitud rechazada.
+
+Levantá Docker, Keycloak y la base de Booking. Después levantá Booking en Development y probá los dos endpoints con tokens reales de Keycloak. Fijate también qué pasa con un token basura.
+Si algo falla, avisame qué pasó y no lo arregles a ciegas.
+
+No hagas commit ni push.

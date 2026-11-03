@@ -12,9 +12,16 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Availability.Gateways.Booking;
 using Availability.Presenters.ConsultarEstadoSolicitud;
 using ConsultarEstado = Availability.UseCases.Solicitudes.ConsultarEstadoSolicitud;
+using Shared.Observability;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logs estructurados según contracts/logs.md (issue #9). AddObservability, de
+// Shared.Observability, configura Serilog para escribir en la consola y en Seq, y agrega a
+// cada línea el servicio ("availability") y el TraceId del pedido. Va en el anillo 4 porque
+// Serilog y el pipeline de ASP.NET Core son detalles del framework.
+builder.AddObservability("availability");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -110,6 +117,11 @@ builder.Services.AddScoped<SolicitarReservaPresenter>();
 builder.Services.AddScoped<SolicitarReserva.Interfaces.IOutputPort>(sp => sp.GetRequiredService<SolicitarReservaPresenter>());
 
 var app = builder.Build();
+
+// Primer middleware del pipeline: toma el header X-Trace-Id del pedido o genera un Guid nuevo,
+// y lo deja disponible para todos los logs del pedido. Va primero para que también los
+// errores de los middlewares siguientes queden con su TraceId.
+app.UseTraceId();
 
 // En desarrollo, la base se crea o se actualiza sola al arrancar el sitio.
 if (app.Environment.IsDevelopment())

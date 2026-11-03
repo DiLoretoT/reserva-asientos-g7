@@ -1,5 +1,6 @@
 using Booking.Api.Respuestas;
 using Booking.Business;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Booking.Api.Controllers;
@@ -12,6 +13,8 @@ namespace Booking.Api.Controllers;
 // respuesta va en JSON en vez de una vista. Son los dos endpoints que Availability consulta, según
 // contracts/availability-booking.md. Los ids son Guid sin restricción en la ruta: uno inválido responde 400, y
 // el 404 queda para "solicitud todavía no procesada".
+// [Authorize] en la clase protege los dos endpoints: sin token válido responde 401 (contracts/tokens.md).
+[Authorize]
 [ApiController]
 [Route("api")]
 public class ReservasController(ConsultaReservas consulta) : ControllerBase

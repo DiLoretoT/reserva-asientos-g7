@@ -26,3 +26,112 @@ Trabajá sobre el clon existente de `dev` y creá la rama `feat/clase-reserva-co
 Implementá los cambios, verificá que la solución compile y comprobá que PostgreSQL funcione correctamente. Actualizá brevemente la documentación con los pasos de instalación y ejecución.
 
 **Dejá todos los cambios locales, sin commit, push ni Pull Request, para revisarlos antes de publicarlos.**
+
+## Booking — BackgroundService de vencimiento de reservas
+
+Quiero implementar el vencimiento automático de reservas en Booking, respetando la arquitectura N-Layer y utilizando EF Core con PostgreSQL.
+
+La rama `dev` ya está actualizada. Creá una nueva rama local llamada `feat/vencimiento-automatico-reservas`.
+
+Revisá primero las clases existentes de Booking para reutilizar la estructura y no modificar el trabajo de mis compañeros.
+
+### Implementación
+
+1. Crear un `BackgroundService` que se ejecute automáticamente cada 15 segundos, con ese intervalo configurable.
+2. Buscar las reservas en estado `retenida` cuya `FechaVencimiento` sea menor o igual a la hora actual de PostgreSQL.
+3. Actualizar esas reservas a `vencida` mediante EF Core, de manera eficiente y segura ante ejecuciones simultáneas.
+4. Actualizar `FechaActualizacion` utilizando también la hora de PostgreSQL.
+5. Garantizar que, al cambiar el estado, el asiento quede liberado según el índice único parcial existente.
+
+El proceso debe ejecutarse mientras Booking esté funcionando, sin depender de solicitudes HTTP. Utilizá correctamente los ámbitos de dependencias de EF Core y evitá agregar clases o abstracciones innecesarias.
+
+### Alcance
+
+- No implementar logs, Serilog, Seq ni auditoría en este PR.
+- No agregar endpoints, tablas ni migraciones si no son necesarias.
+- No modificar la lógica de retención de mi compañero.
+- Mantener el código simple, con comentarios mínimos.
+
+Verificá que la solución compile y probá el vencimiento con PostgreSQL, comprobando que las reservas confirmadas o no vencidas permanezcan intactas y que ejecutar el proceso varias veces no genere problemas. Utilizá datos de prueba aislados, sin afectar las reservas existentes. No incorpores archivos de pruebas permanentes.
+
+Agregá este pedido al final de `prompts/jonathan-villarreal.md`, conservando el historial anterior, y documentá brevemente cómo funciona el proceso.
+
+**Importante:** dejá todos los cambios locales para revisión. No hagas commit, push, merge ni Pull Request.
+
+Al terminar, entregame un resumen de los cambios y las verificaciones realizadas.
+
+## Booking — Contrato de mensajes del broker (issue #44)
+
+Quiero preparar el contrato de mensajes entre Availability y Booking mediante Azure Service Bus, respetando la arquitectura y las convenciones existentes del grupo.
+
+Primero verificá el estado local, actualizá `dev` desde `origin/dev` mediante fast-forward y creá una rama nueva `docs/contrato-broker`. Si hay cambios locales sin guardar o algún conflicto, detenete y avisame sin descartarlos.
+
+### Trabajo
+
+1. Revisá el issue #44, los contratos existentes y las clases actuales de Availability y Booking relacionadas con solicitudes y mensajes.
+2. Creá `contracts/broker.md` con una propuesta clara y concisa que incluya:
+   - Responsabilidades de Availability, Azure Service Bus y Booking.
+   - Formato JSON `camelCase`, tipos y ejemplo de mensaje, reutilizando los cinco campos existentes.
+   - `solicitudId` como identificador único y TraceId, sin agregar otro campo de trazabilidad al cuerpo.
+   - Propuesta para `MessageId`, `CorrelationId` y `ContentType` de Azure Service Bus.
+   - Reglas esperadas para mensajes duplicados, validación, confirmación de procesamiento, reintentos y mensajes inválidos.
+   - Configuración necesaria de tópico y suscripción, sin inventar valores ni incluir credenciales.
+3. Marcá claramente las decisiones que requieran aprobación de las parejas de Availability, Booking o Broker, especialmente cuándo se considera completado un mensaje teniendo en cuenta la futura integración con Payment.
+
+### Alcance
+
+- Este trabajo es exclusivamente de documentación del contrato.
+- No implementar todavía el publicador ni el consumidor real.
+- No modificar clases, APIs, bases de datos ni configuración de los servicios.
+- No agregar logs, auditoría ni funcionalidades nuevas.
+- Evitar documentación extensa o decisiones innecesarias.
+
+Agregá este pedido al final de `prompts/jonathan-villarreal.md`, conservando el historial anterior.
+
+Dejá únicamente esos dos archivos modificados, listos para revisión. No hagas commit, push ni Pull Request.
+
+Al terminar, entregame un resumen de la propuesta, las decisiones pendientes de acordar y los archivos modificados.
+
+## Finalizar PR #85 — Contrato del broker
+
+Estamos trabajando en el repositorio `reserva-asientos-g7`. Quiero incorporar las observaciones de Facundo al contrato del broker (PR #85, issue #44).
+
+Ya acordamos con los compañeros que **el momento de completar los mensajes se definirá durante la implementación**, coordinando Booking con Payment. No debe bloquear la aprobación del contrato.
+
+### Preparación
+
+1. Trabajá sobre la rama existente `docs/contrato-broker`.
+2. Verificá el estado de Git antes de modificar archivos. No descartes cambios locales.
+3. Revisá el comentario de Facundo en el PR #85 y el contenido actual de `contracts/broker.md`.
+4. No crees otra rama ni otro PR.
+
+### Cambios en contracts/broker.md
+
+1. **Mantener el cuerpo JSON de cinco campos:** `solicitudId`, `eventoId`, `asientoId`, `usuarioId` y `fechaSolicitud`, sin agregar otros.
+2. **Mantener los metadatos de Service Bus:** `MessageId`, `CorrelationId`, `ContentType = application/json` y `Subject = solicitud-reserva`.
+3. **Eliminar `ApplicationProperties["version"]`:** quitar también las validaciones, motivos de DLQ y referencias que dependan de esa propiedad.
+4. **Simplificar los motivos propios de DLQ** a `json_invalido` y `campo_invalido`. Clasificar de manera coherente los errores de campos, metadatos y conflictos de idempotencia, sin introducir nuevas categorías.
+5. **Flexibilizar el formato de `fechaSolicitud`:** exigir una fecha ISO 8601 con UTC explícito, aceptando tanto `Z` como `+00:00`. Mantener `DateTime.UtcNow` como recomendación para Availability. Rechazar fechas sin información de zona horaria.
+6. **Separar contrato de implementación:** mantener el documento centrado en el formato del mensaje y sus validaciones. Simplificar las secciones operativas para evitar duplicar la configuración que Facundo está documentando en el PR #86.
+7. **Dejar pendiente la confirmación del mensaje:** no decidir si `CompleteMessageAsync` se ejecuta después de la retención o del resultado final. Indicar brevemente que esta decisión, junto con la recuperación e idempotencia del cobro, se resolverá durante los issues #12, #14 y #42, en coordinación con Booking y Payment.
+8. Mantener los acuerdos pendientes que sigan siendo relevantes, sin convertir decisiones de implementación en requisitos obligatorios del contrato.
+
+### Alcance
+
+- Modificar únicamente `contracts/broker.md` y `prompts/jonathan-villarreal.md`.
+- Agregar este pedido al final del historial de prompts sin modificar las entradas anteriores.
+- No modificar código, configuración, bases de datos ni migraciones.
+- No implementar el publicador, consumidor ni integración gRPC.
+- Mantener la documentación clara, breve y sin contradicciones.
+
+### Publicación
+
+1. Revisá que los cambios respondan a los comentarios de Facundo y que el ejemplo JSON siga siendo válido.
+2. Verificá el diff y comprobá que no existan cambios adicionales.
+3. Creá un commit con un mensaje descriptivo terminado en `AI-assisted`.
+4. Hacé push a la misma rama para actualizar el PR #85 existente.
+5. Actualizá la descripción del PR para reflejar la eliminación de `version`, la nueva validación de fechas, los dos motivos de DLQ y la separación de las decisiones operativas.
+
+**No hagas merge, no apruebes el PR ni abras otro.**
+
+Al finalizar, informame los archivos modificados, el commit realizado, el estado del PR y cualquier decisión que haya quedado pendiente de coordinación.

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Booking.Business\Booking.Business.csproj" />
     <ProjectReference Include="..\Booking.Data\Booking.Data.csproj" />
     <ProjectReference Include="..\Booking.Domain\Booking.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Auth\Shared.Auth.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.Observability\Shared.Observability.csproj" />
   </ItemGroup>
 

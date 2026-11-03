@@ -2,15 +2,20 @@ using Booking.Api;
 using Booking.Business;
 using Booking.Data;
 using Microsoft.EntityFrameworkCore;
+using Shared.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddValidacionKeycloak();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options => BookingJson.Configurar(options.SerializerOptions));
 builder.Services.AddControllers().AddJsonOptions(options => BookingJson.Configurar(options.JsonSerializerOptions));
 builder.Services.AddOptions<BookingOptions>()
     .Bind(builder.Configuration.GetSection(BookingOptions.SectionName))
     .Validate(options => options.RetentionMinutes > 0, "Booking:RetentionMinutes debe ser mayor que cero.")
+    .Validate(options => options.ExpirationIntervalSeconds > 0
+        && options.ExpirationIntervalSeconds <= (uint.MaxValue - 1) / 1000,
+        "Booking:ExpirationIntervalSeconds debe estar entre 1 y 4294967.")
     .ValidateOnStart();
 
 var connectionString = builder.Configuration.GetConnectionString("Booking")
@@ -18,6 +23,8 @@ var connectionString = builder.Configuration.GetConnectionString("Booking")
 builder.Services.AddDbContext<BookingDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<ConsultaReservas>();
 builder.Services.AddScoped<RetencionReservas>();
+builder.Services.AddScoped<VencimientoReservas>();
+builder.Services.AddHostedService<VencimientoReservasService>();
 
 var app = builder.Build();
 
@@ -29,6 +36,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

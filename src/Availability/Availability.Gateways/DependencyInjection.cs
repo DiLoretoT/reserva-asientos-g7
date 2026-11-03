@@ -2,12 +2,14 @@ using Availability.Gateways.Persistencia;
 using Availability.Gateways.Persistencia.Repositorios;
 using Availability.Gateways.Booking;
 using Availability.Gateways.Broker;
+using Availability.Gateways.Observabilidad;
 using Availability.UseCases.Interfaces;
 using Availability.UseCases.Eventos;
 using Availability.UseCases.Solicitudes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.Observability;
 
 namespace Availability.Gateways
 {
@@ -46,16 +48,26 @@ namespace Availability.Gateways
             services.AddSingleton<TokenServicio>();
             services.AddTransient<TokenServicioHandler>();
 
+            // Handler de Shared.Observability que agrega el header X-Trace-Id a cada llamada
+            // (contracts/logs.md). Transient por el mismo motivo que TokenServicioHandler.
+            services.AddTransient<TraceIdHttpClientHandler>();
+
             // Cliente HTTP de Booking. AddHttpClient lo registra con un HttpClient que sale de
             // IHttpClientFactory, la fábrica de .NET que reutiliza las conexiones en lugar de
             // abrir una nueva en cada pedido. Cada llamada pasa por TokenServicioHandler, que
-            // agrega el token.
+            // agrega el token, y por TraceIdHttpClientHandler, que agrega el TraceId: así
+            // Booking registra sus logs con el mismo TraceId que Availability y la cadena de
+            // sucesos se puede seguir entre los dos servicios.
+            //
+            // El cliente de Keycloak (TokenServicio.NombreCliente) no lleva el TraceId: Keycloak
+            // no participa del contrato de logs.
             services.AddHttpClient<ClienteBooking>(http =>
                 {
                     http.BaseAddress = new Uri(opcionesBooking.BaseUrl);
                     http.Timeout = TiempoDeEspera;
                 })
-                .AddHttpMessageHandler<TokenServicioHandler>();
+                .AddHttpMessageHandler<TokenServicioHandler>()
+                .AddHttpMessageHandler<TraceIdHttpClientHandler>();
 
             // Los dos puertos hacia Booking se resuelven con la misma clase. Quien pide
             // IConsultaOcupacion o IConsultaEstadoSolicitud recibe un ClienteBooking.
@@ -70,6 +82,12 @@ namespace Availability.Gateways
             services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesSimulado(
                 simularBrokerSinRespuesta,
                 sp.GetRequiredService<ILogger<PublicadorSolicitudesSimulado>>()));
+
+            // Auditoría de los casos de uso (issue #9). Singleton porque no guarda estado propio:
+            // IAuditLogger e ITraceContext ya son Singleton (los registra AddObservability en
+            // Program.cs), y el TraceId de cada pedido vive en el AsyncLocal de ITraceContext,
+            // no en esta clase.
+            services.AddSingleton<IAuditoria, AuditoriaObservability>();
 
             return services;
         }

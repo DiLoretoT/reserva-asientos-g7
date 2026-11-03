@@ -55,6 +55,8 @@ public static class KeycloakExtensions
                 };
                 // AUDITORÍA: dejamos registro de cada decisión de seguridad.
                 // Se loguea quién y por qué, pero NUNCA el token completo (si el log se filtra, el token sería usable).
+                // Operacion y Resultado siguen contracts/logs.md. Es una sola línea por pedido, sin inicio y fin:
+                // validar un token no hace avanzar la reserva y duplicaría las líneas de cada llamada.
                 o.Events = new JwtBearerEvents
                 {
                     OnTokenValidated = ctx =>
@@ -67,8 +69,8 @@ public static class KeycloakExtensions
                                     ?? ctx.Principal?.FindFirst("azp")?.Value
                                     ?? "desconocido";
 
-                        log.LogInformation("AUTH token aceptado. Quien={Quien} Endpoint={Metodo} {Ruta}",
-                            quien, ctx.Request.Method, ctx.Request.Path);
+                        log.LogInformation("AUTH token aceptado. Operacion={Operacion} Resultado={Resultado} Quien={Quien} Endpoint={Metodo} {Ruta}",
+                            "validar_token", "ok", quien, ctx.Request.Method, ctx.Request.Path);
                         return Task.CompletedTask;
                     },
 
@@ -87,8 +89,8 @@ public static class KeycloakExtensions
                             _ => "token inválido"
                         };
 
-                        log.LogWarning("AUTH token rechazado. Motivo={Motivo} Endpoint={Metodo} {Ruta}",
-                            motivo, ctx.Request.Method, ctx.Request.Path);
+                        log.LogWarning("AUTH token rechazado. Operacion={Operacion} Resultado={Resultado} Motivo={Motivo} Endpoint={Metodo} {Ruta}",
+                            "validar_token", "rechazada", motivo, ctx.Request.Method, ctx.Request.Path);
                         return Task.CompletedTask;
                     },
 
@@ -101,8 +103,8 @@ public static class KeycloakExtensions
                             var log = ctx.HttpContext.RequestServices
                                 .GetRequiredService<ILoggerFactory>().CreateLogger("Shared.Auth.Audit");
 
-                            log.LogWarning("AUTH solicitud rechazada. Motivo=sin token Endpoint={Metodo} {Ruta}",
-                                ctx.Request.Method, ctx.Request.Path);
+                            log.LogWarning("AUTH solicitud rechazada. Operacion={Operacion} Resultado={Resultado} Motivo={Motivo} Endpoint={Metodo} {Ruta}",
+                                "validar_token", "rechazada", "sin token", ctx.Request.Method, ctx.Request.Path);
                         }
                         return Task.CompletedTask;
                     }
@@ -157,13 +159,14 @@ public class ServiceTokenProvider(IConfiguration config, IHttpClientFactory fact
             if (EnCache(audiencia) is { } traidoPorOtro) return traidoPorOtro;
 
             // Sin secret, Keycloak responde un error poco claro: mejor avisar qué falta.
+            // Inicio y fin con la misma Operacion (contracts/logs.md). El inicio no lleva Resultado: todavía no hay.
+            log.LogInformation("AUTH [Inicio Operación] {Operacion} ClientId={ClientId} Audiencia={Audiencia}",
+                "pedir_token_servicio", _opts.ClientId, audiencia);
+
             var secret = string.IsNullOrWhiteSpace(_opts.ClientSecret)
                 ? throw new InvalidOperationException(
                     "Falta Keycloak:ClientSecret. Cargalo con: dotnet user-secrets set \"Keycloak:ClientSecret\" \"<secret>\"")
                 : _opts.ClientSecret;
-
-            log.LogInformation("AUTH pidiendo token de servicio. ClientId={ClientId} Audiencia={Audiencia}",
-                _opts.ClientId, audiencia);
 
             var client = factory.CreateClient();
             var resp = await client.PostAsync(
@@ -180,14 +183,14 @@ public class ServiceTokenProvider(IConfiguration config, IHttpClientFactory fact
             var data = (await resp.Content.ReadFromJsonAsync<TokenResponse>(ct))!;
             _cache[audiencia] = (data.AccessToken, DateTimeOffset.UtcNow.AddSeconds(data.ExpiresIn - 30));
 
-            log.LogInformation("AUTH token de servicio obtenido. ClientId={ClientId} Audiencia={Audiencia} VenceEnSegundos={Seg}",
-                _opts.ClientId, audiencia, data.ExpiresIn);
+            log.LogInformation("AUTH [Fin Operación] {Operacion} {Resultado} ClientId={ClientId} Audiencia={Audiencia} VenceEnSegundos={Seg}",
+                "pedir_token_servicio", "ok", _opts.ClientId, audiencia, data.ExpiresIn);
             return data.AccessToken;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            log.LogError("AUTH falló el pedido de token de servicio. ClientId={ClientId} Audiencia={Audiencia} Error={Error}",
-                _opts.ClientId, audiencia, ex.Message);
+            log.LogError("AUTH [Fin Operación] {Operacion} {Resultado} ClientId={ClientId} Audiencia={Audiencia} Error={Error}",
+                "pedir_token_servicio", "error", _opts.ClientId, audiencia, ex.Message);
             throw;
         }
         finally { _lock.Release(); }
