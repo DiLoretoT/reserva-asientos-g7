@@ -1,10 +1,13 @@
 using Booking.Api;
+using Booking.Api.Broker;
 using Booking.Business;
 using Booking.Data;
 using Microsoft.EntityFrameworkCore;
 using Shared.Auth;
+using Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddObservability("booking");
 
 builder.AddValidacionKeycloak();
 builder.Services.AddOpenApi();
@@ -25,6 +28,7 @@ builder.Services.AddScoped<ConsultaReservas>();
 builder.Services.AddScoped<RetencionReservas>();
 builder.Services.AddScoped<VencimientoReservas>();
 builder.Services.AddHostedService<VencimientoReservasService>();
+builder.Services.AddBookingServiceBus(builder.Configuration);
 
 var app = builder.Build();
 

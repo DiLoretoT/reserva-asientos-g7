@@ -135,3 +135,66 @@ Ya acordamos con los compañeros que **el momento de completar los mensajes se d
 **No hagas merge, no apruebes el PR ni abras otro.**
 
 Al finalizar, informame los archivos modificados, el commit realizado, el estado del PR y cualquier decisión que haya quedado pendiente de coordinación.
+
+
+---
+
+## 2026-11-03 — Consumidor de Azure Service Bus en Booking (issue #12)
+
+Estoy con el issue #12: el consumidor de Azure Service Bus en Booking, preparado para integrar después el cobro a Payment (#14 y #15). Trabajá desde el `dev` más reciente en la rama `feat/consumidor-servicebus-booking`, sin descartar cambios locales. Antes de escribir nada, leé `contracts/broker.md`, la configuración del broker del PR #86 y el código actual de Booking. No toques Availability, Payment ni Shared.Auth.
+
+Quiero un `BackgroundService` con `ServiceBusProcessor` que escuche `grupo7-booking-topic` y la suscripción de `ServiceBus:SubscriptionName`, con `PeekLock`, sin autocompletar, prefetch 0 y una llamada concurrente. La conexión va en `ServiceBus:ConnectionString`, nunca en archivos versionados, y el consumidor tiene que venir deshabilitado por defecto.
+
+El validador revisa los cinco campos y los metadatos del contrato, y acepta fechas UTC con `Z` o `+00:00`. Los mensajes inválidos van a la DLQ solo con `json_invalido` o `campo_invalido`; un rechazo por `asiento_ocupado` no va a la DLQ, y ante una falla transitoria el mensaje se tiene que poder volver a entregar. Reutilizá `SolicitudReserva` y `RetencionReservas`, con un scope por mensaje, y usá el `solicitudId` como TraceId. No fuerces un máximo de entregas: en Azure es 10.
+
+Todavía no está acordado cuándo completar el mensaje de una reserva retenida, así que no lo completes mientras falte el cobro. No toques la concurrencia de Guillermo (#17); si ves un problema, documentalo.
+
+Agregá pruebas sin credenciales reales, compilá y verificá que Booking siga andando sin Service Bus. Actualizá mi historial de prompts. No hagas commit ni push.
+
+## 2026-11-03 — Conexión real con Azure
+
+Seguimos en la misma rama. Quiero verificar la conexión real con Azure usando la connection string de User Secrets, sin mostrarla ni copiarla al código, la documentación o los logs. La clave se renovó: usá la nueva.
+
+Prepará la suscripción de desarrollo `booking-jonathan` sin tocar la compartida `booking`. Probá recepción, validación, reentregas y DLQ sin publicar en el tópico compartido si eso afecta a los demás; si necesitás permisos o coordinación, avisame.
+
+Revisá el manejo de excepciones y la pausa provisional del consumidor, y corregí solo lo que sea del #12. Cuando termines, sacá `tests/Booking.Tests` y restaurá `ReservaAsientos.slnx`, como acordamos para este PR. Compilá, revisá el diff y documentá resultados y pendientes. No hagas commit ni push.
+
+## 2026-11-03 — Duplicados e índice único con PostgreSQL real
+
+Sin rehacer el consumidor, quiero probar con PostgreSQL real dos casos: que procesar dos veces la misma solicitud no cree otra reserva (aclarando que no es una reentrega real de Azure) y que dos solicitudes distintas para el mismo asiento terminen con la segunda rechazada por `asiento_ocupado` gracias al índice único parcial. Para esto no uses EF Core InMemory.
+
+No publiques en el tópico compartido porque no está coordinado con el grupo. Después de las pruebas, sacá `tests/Booking.Tests`, restaurá la solución, compilá y documentá. No cambies la pausa ni el completado del mensaje, que siguen pendientes de acordar. No hagas commit ni push.
+
+## 2026-11-03 — Pruebas con Azure real y revisión final
+
+Ahora sí hacé las pruebas con Azure, en este orden, sobre `booking-jonathan`: un cuerpo que no sea JSON tiene que ir a la DLQ con `json_invalido`; uno con metadatos incorrectos, con `campo_invalido`; y uno válido tiene que crear una reserva `Retenida` en un PostgreSQL temporal, con el TraceId correcto y el consumidor pausado. Usá IDs inventados que no existan en el catálogo de Availability. Al terminar, limpiá solo nuestros mensajes de `booking-jonathan` y su DLQ; las copias de las otras suscripciones quedan a cargo de sus responsables.
+
+Revisá también el validador: el contrato pide cinco campos obligatorios pero no prohíbe otros, así que ajustalo para que ignore los campos de más sin aflojar los obligatorios. No cambies el completado del mensaje, que sigue pendiente del grupo (#44), ni `RetencionReservas`.
+
+Dejá `docs/booking-servicebus.md` como documentación técnica, no como bitácora, con lo verificado y lo pendiente (#14, #15, #17 y #44). No vuelvas a agregar `Booking.Tests` y dejá los scripts de prueba fuera del repo. Compilá, revisá que no haya credenciales y registrá este prompt. No hagas commit ni push.
+
+
+## 2026-11-03 — Publicación del consumidor de Booking (issue #12)
+
+Vamos a publicar el trabajo del issue #12: consumidor de Azure Service Bus en Booking.
+
+Estamos en la rama `feat/consumidor-servicebus-booking`.
+
+Antes de publicar:
+
+1. Hacé `git fetch origin` y verificá que la rama esté actualizada respecto de `origin/dev`. Si hubo cambios nuevos, integrálos sin perder nuestro trabajo ni sobrescribir cambios de compañeros.
+2. Revisá el diff completo. Confirmá que solo incluya archivos correspondientes al consumidor de Booking, su documentación y mi historial de prompts.
+3. Verificá que no haya credenciales, archivos temporales, proyectos de pruebas ni modificaciones ajenas al issue.
+4. Comprobá que `ServiceBus:Enabled` siga en `false` por defecto y que `ReservaAsientos.slnx` conserve sus proyectos originales.
+5. Ejecutá restore y build de toda la solución. Si encontrás errores o conflictos, resolvelos antes de publicar, respetando los cambios del equipo.
+
+Si todo está correcto, realizá el commit y push en nuestra rama, respetando la convención del repositorio e incluyendo `AI-assisted` al final del mensaje de commit.
+
+Después creá un PR hacia `dev`, asociado al issue #12, con un título claro y una descripción breve que incluya:
+
+- Qué implementamos: consumidor Service Bus, validación del contrato, DLQ, reintentos, retención y trazabilidad.
+- Verificaciones: tres pruebas reales con Azure, duplicados y asiento ocupado con PostgreSQL real, y compilación completa.
+- Limitaciones: consumo deshabilitado por defecto y pausa provisional para reservas retenidas.
+- Pendientes: integración con Payment (#14/#15), concurrencia de Guillermo (#17) y acuerdo sobre `CompleteMessageAsync` (#44).
+
+No presentes esas dependencias como funcionalidades terminadas. No incluyas secretos ni identificadores sensibles en la descripción.
