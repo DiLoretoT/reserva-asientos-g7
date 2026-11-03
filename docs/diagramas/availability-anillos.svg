@@ -35,8 +35,8 @@
   <text x="80" y="162" class="caja-texto">EventosController, ReservasController, SolicitudesController, CuentaController</text>
   <text x="80" y="186" class="caja-texto">Vistas Razor (Eventos, Reservas, Solicitudes y el layout común)</text>
   <text x="80" y="210" class="caja-texto">Program.cs registra los casos de uso, los gateways y el inicio de sesión</text>
-  <text x="80" y="240" class="caja-nota">Reciben el pedido HTTP, leen el usuario de la cookie y eligen la vista.</text>
-  <text x="80" y="260" class="caja-nota">Ningún otro anillo conoce ASP.NET Core.</text>
+  <text x="80" y="234" class="caja-texto">ReintentoEnvioSolicitudesService reintenta en segundo plano el envío al broker</text>
+  <text x="80" y="262" class="caja-nota">Los controllers reciben el pedido HTTP, leen el usuario de la cookie y eligen la vista.</text>
 
   <rect x="860" y="130" width="380" height="120" rx="12" class="externa"/>
   <text x="880" y="158" class="caja-titulo">Keycloak</text>
@@ -57,7 +57,7 @@
   <rect x="860" y="1098" width="340" height="96" rx="12" class="externa"/>
   <text x="880" y="1126" class="caja-titulo">Broker (Azure Service Bus)</text>
   <text x="880" y="1150" class="caja-texto">Recibe las solicitudes de reserva.</text>
-  <text x="880" y="1172" class="caja-texto">Hoy lo reemplaza un publicador simulado.</text>
+  <text x="880" y="1172" class="caja-texto">Sin configurar, se usa un publicador simulado.</text>
 
   <!-- Anillo 3 -->
   <rect x="60" y="310" width="1180" height="760" rx="36" fill="#dcd9f4" stroke="#a9a3e0" stroke-width="1.5"/>
@@ -83,7 +83,7 @@
   <text x="1004" y="560" class="caja-texto">y un ViewModel por página</text>
   <text x="1004" y="588" class="caja-nota">Arman lo que muestra la vista</text>
 
-  <rect x="100" y="925" width="1100" height="120" rx="12" class="caja"/>
+  <rect x="100" y="925" width="1100" height="130" rx="12" class="caja"/>
   <text x="120" y="951" class="caja-titulo">Availability.Gateways</text>
   <text x="120" y="978" class="caja-texto" font-weight="600">Persistencia</text>
   <text x="120" y="1000" class="caja-texto">EventoRepository, SolicitudRepository</text>
@@ -91,9 +91,10 @@
   <text x="500" y="978" class="caja-texto" font-weight="600">Booking</text>
   <text x="500" y="1000" class="caja-texto">ClienteBooking (cliente HTTP)</text>
   <text x="500" y="1022" class="caja-texto">TokenServicio y TokenServicioHandler</text>
-  <text x="880" y="978" class="caja-texto" font-weight="600">Broker</text>
-  <text x="880" y="1000" class="caja-texto">PublicadorSolicitudesSimulado</text>
-  <text x="880" y="1022" class="caja-texto">SolicitudReservaMensaje</text>
+  <text x="880" y="978" class="caja-texto" font-weight="600">Broker y logs</text>
+  <text x="880" y="1000" class="caja-texto">PublicadorSolicitudesServiceBus</text>
+  <text x="880" y="1022" class="caja-texto">PublicadorSolicitudesSimulado</text>
+  <text x="880" y="1044" class="caja-texto">AuditoriaObservability (logs en Seq)</text>
 
   <!-- Anillo 2 -->
   <rect x="330" y="370" width="640" height="530" rx="30" fill="#d4ebdc" stroke="#94c7a6" stroke-width="1.5"/>
@@ -110,13 +111,13 @@
 
   <rect x="350" y="512" width="600" height="80" rx="10" class="caja"/>
   <text x="366" y="538" class="caja-titulo">Interactor de cada caso de uso</text>
-  <text x="366" y="560" class="caja-texto">ListarEventos, ListarAsientosDisponibles, SolicitarReserva, ConsultarEstadoSolicitud</text>
-  <text x="366" y="580" class="caja-texto">con sus modelos InputDataRequest y OutputDataResponse</text>
+  <text x="366" y="560" class="caja-texto">ListarEventos, ListarAsientosDisponibles, SolicitarReserva, ReintentarEnvio</text>
+  <text x="366" y="580" class="caja-texto">y ConsultarEstadoSolicitud, con sus modelos de entrada y salida</text>
 
   <rect x="350" y="782" width="600" height="98" rx="10" class="caja"/>
   <text x="366" y="808" class="caja-titulo">Puertos hacia afuera</text>
   <text x="366" y="832" class="caja-texto">IEventoRepository, ISolicitudRepository</text>
-  <text x="366" y="854" class="caja-texto">IConsultaOcupacion, IConsultaEstadoSolicitud, IPublicadorSolicitudes</text>
+  <text x="366" y="854" class="caja-texto">IConsultaOcupacion, IConsultaEstadoSolicitud, IPublicadorSolicitudes, IAuditoria</text>
 
   <!-- Anillo 1 -->
   <rect x="450" y="620" width="400" height="136" rx="24" fill="#f7e2c2" stroke="#e0b475" stroke-width="1.5"/>
@@ -134,9 +135,13 @@
 
   <!-- Relaciones de código: siempre hacia adentro -->
   <!-- Web a Controllers -->
-  <path d="M 196 280 L 196 398" class="dep"/>
-  <rect x="204" y="350" width="52" height="18" rx="4" class="fondo-etiqueta"/>
-  <text x="208" y="364" class="etiqueta">llaman</text>
+  <path d="M 76 280 L 76 382 L 196 382 L 196 398" class="dep"/>
+  <rect x="140" y="362" width="52" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="144" y="376" class="etiqueta">llaman</text>
+  <!-- Web a Gateways: Program.cs llama a AddGateways -->
+  <path d="M 60 250 L 40 250 L 40 990 L 98 990" class="dep"/>
+  <rect x="44" y="700" width="58" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="47" y="714" class="etiqueta">registra</text>
   <!-- Web a Presenters (ViewModels) -->
   <path d="M 760 280 L 760 298 L 1104 298 L 1104 398" class="dep"/>
   <text x="900" y="292" class="etiqueta">muestran los ViewModels</text>
@@ -163,9 +168,9 @@
 
   <!-- Comunicación con sistemas externos -->
   <path d="M 820 190 L 860 190" class="externo"/>
-  <path d="M 270 1045 L 270 1098" class="externo"/>
-  <path d="M 650 1045 L 650 1098" class="externo"/>
-  <path d="M 1030 1045 L 1030 1098" class="externo"/>
+  <path d="M 270 1055 L 270 1098" class="externo"/>
+  <path d="M 650 1055 L 650 1098" class="externo"/>
+  <path d="M 1030 1055 L 1030 1098" class="externo"/>
   <path d="M 1200 985 L 1260 985 L 1260 190 L 1240 190" class="externo"/>
 
   <!-- Referencias -->
