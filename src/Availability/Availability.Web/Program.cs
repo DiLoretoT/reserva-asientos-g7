@@ -80,7 +80,12 @@ builder.Services.AddGateways(
         ClientId = keycloak["ClientId"]!,
         ClientSecret = keycloak["ClientSecret"]!
     },
-    builder.Configuration.GetValue<bool>("Broker:SimularSinRespuesta"));
+    builder.Configuration.GetValue<bool>("Broker:SimularSinRespuesta"),
+    // Connection string del broker: si no está configurada, la DI usa el publicador
+    // simulado y el sitio arranca igual (contracts/broker-config.md, PR #86).
+    builder.Configuration["ServiceBus:ConnectionString"],
+    // Nombre del tópico, con el default del contrato si la clave no está.
+    builder.Configuration["ServiceBus:TopicName"]);
 
 // Cada caso de uso tiene clases con el mismo nombre (Interactor, IInputPort, IOutputPort)
 // en su propio namespace. Los alias ListarAsientos y ListarEventos de los using de arriba
