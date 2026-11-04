@@ -76,12 +76,7 @@ Desde la raíz del repo.
 
 Booking: la referencia a `Shared.Auth` **ya está en `dev`** (`feat/auth-booking`, #84). No hay que agregarla: con el `git merge origin/dev` de 3.2 ya la tenés.
 
-Payment:
-```
-dotnet add src/Payment/Payment.Grpc/Payment.Grpc.csproj reference src/Shared/Shared.Auth/Shared.Auth.csproj
-```
-
-Después, en el `Program.cs`: `using Shared.Auth;` (en Booking ya está en `dev`).
+Payment: la referencia a `Shared.Auth` y el `using Shared.Auth;` **ya están en `dev`** (#102). Tampoco hay que agregarlos.
 
 Availability no necesita esta referencia.
 
@@ -202,9 +197,7 @@ app.Run();
 
 Solo recibe llamadas. **No lleva secret ni `AddTokenDeServicio`.**
 
-> **Activalo recién cuando Booking le mande el token por gRPC.** Si se activa antes, Booking recibe `Unauthenticated` en cada llamada.
->
-> Estado al escribir esta guía: la referencia y la validación de Booking ya están en `dev` (`feat/auth-booking`, #84), pero la llamada gRPC de Booking a Payment todavía falta.
+**La validación ya está activa en `dev`** (#102, issue #26). No hay que agregar código. Cada llamada gRPC a Payment tiene que llevar un token válido, y Booking ya lo manda con `AddTokenDeServicio("payment-api")`.
 
 **`appsettings.json`:** la sección `Keycloak` **ya está en `dev`**, no hay que agregarla. Solo verificá que coincida con esta:
 
@@ -216,13 +209,7 @@ Solo recibe llamadas. **No lleva secret ni `AddTokenDeServicio`.**
 }
 ```
 
-**Qué hay que hacer:** en `dev`, el `Program.cs` de Payment tiene comentadas las tres líneas de autenticación, y `PaymentGrpcService.cs` tiene comentado el `[Authorize]` (el `using Microsoft.AspNetCore.Authorization;` ya está). Cuando Booking ya mande el token:
-
-1. Agregar la referencia a `Shared.Auth` (ver 3.3).
-2. En `Program.cs`: agregar `using Shared.Auth;` y descomentar `builder.AddValidacionKeycloak();`, `app.UseAuthentication();` y `app.UseAuthorization();`.
-3. En `PaymentGrpcService.cs`: descomentar `[Authorize]`.
-
-Queda así:
+**Cómo está en `dev`:**
 
 ```csharp
 // Program.cs
@@ -232,6 +219,7 @@ builder.Services.AddScoped<PaymentService>();
 builder.AddValidacionKeycloak();
 
 var app = builder.Build();
+app.UseTraceId();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -244,7 +232,11 @@ app.MapGrpcService<PaymentGrpcService>();
 public class PaymentGrpcService(PaymentService paymentService) : PaymentGrpc.PaymentGrpcBase
 ```
 
-**Ojo con `/payment-test`:** el `[Authorize]` de la clase protege solo el servicio gRPC. El endpoint HTTP de prueba `/payment-test` sigue abierto. Decidí si lo dejás así (solo para pruebas) o le agregás `.RequireAuthorization()`.
+`UseTraceId()` va antes de la autenticación para que los logs `AUTH` de Payment también tengan `TraceId`.
+
+**`/payment-test` ya no existe.** Se borró porque cobraba sin token: `[Authorize]` solo protege el servicio gRPC. Para probar un cobro, hacé una reserva o llamá por gRPC con token (ver 7).
+
+**Qué necesita para cobrar:** Booking tiene que tener su `Keycloak:ClientSecret` (ver 3.5) y Keycloak tiene que estar levantado. Si Booking no consigue el token, la reserva nueva se rechaza con `pago_no_disponible`.
 
 ## 6. Availability (sitio MVC)
 
@@ -315,14 +307,24 @@ Authorization: Bearer PEGAR_ACCESS_TOKEN
 | Token válido | Token de `availability-web` con `scope=booking-api` | 200 y log `token aceptado` |
 | Token de otro servicio | Token de `booking-api` con `scope=payment-api`, usado contra Booking | 401 y log `Motivo=audiencia incorrecta` |
 | Token modificado | Cambiá una letra del final del token | 401 y log `Motivo=firma inválida` |
-| Token vencido | Pedí un token y esperá más de 5 min 30 s (dura 5 minutos, más 30 segundos de tolerancia) | 401 y log `Motivo=token vencido`. **Pendiente de probar** |
+| Token vencido | Pedí un token y esperá más de 5 min 30 s (dura 5 minutos, más 30 segundos de tolerancia) | 401 y log `Motivo=token vencido` |
 | Sin claves de firma | Pedí un token, apagá Keycloak y reiniciá la API para que no tenga claves guardadas. Después usá ese token | 401 y log `Motivo=clave de firma no disponible` |
 
 **Ojo con la prueba de "otro servicio":** pedir un token con `client_id=availability-web` y `scope=payment-api` no sirve. Keycloak responde `invalid_scope` y no entrega ningún token. Para probar el 401 hay que pedirlo con `client_id=booking-api` y `scope=payment-api`, y usar ese token contra Booking.
 
 El token dura 5 minutos. Si da 401 con un token que antes andaba, pedí uno nuevo.
 
-**Payment (gRPC):** se prueba a través de Booking, cuando esté la llamada gRPC (ver 5). Hacé una reserva por el flujo normal: en Booking tiene que aparecer el pedido del token de servicio y en Payment `token aceptado`.
+**Payment (gRPC):** hacé una reserva por el flujo normal. En Booking tiene que aparecer el pedido del token de servicio (`pedir_token_servicio`) y en Payment `token aceptado`. Si Booking ya tiene un token guardado, no vuelve a pedirlo.
+
+Para probar los rechazos hay que llamar directo por gRPC, con un cliente como `grpcurl` o Postman, a `payment.PaymentGrpc/ProcessPayment` en `localhost:5043`:
+
+| Prueba | Token | Resultado esperado |
+|---|---|---|
+| Token válido | De `booking-api` con `scope=payment-api` | Cobra y log `token aceptado` |
+| Sin token | Ninguno | `Unauthenticated` y log `Motivo=sin token` |
+| Token de otro servicio | De `availability-web` con `scope=booking-api` | `Unauthenticated` y log `Motivo=audiencia incorrecta` |
+| Token modificado | Cambiá una letra del final del token | `Unauthenticated` y log `Motivo=firma inválida` |
+| Token vencido | Esperá más de 5 min 30 s | `Unauthenticated` y log `Motivo=token vencido` |
 
 ## 8. Logs de auditoría
 
@@ -352,7 +354,7 @@ El token de servicio se **cachea** en memoria, uno por audiencia: se pide una ve
 | 401 y log `Motivo=clave de firma no disponible` | La API no tiene la clave para comprobar la firma del token. Lo más común es que Keycloak esté apagado y la API no haya podido bajar sus claves. También puede aparecer si el token fue firmado con una clave que la API no conoce. No significa que el token esté alterado: en ese caso el motivo es `firma inválida` | Verificá que Keycloak esté arriba y volvé a probar. Cuando vuelve, la API se recupera sin reiniciarla. Si sigue, pedí un token nuevo |
 | 401 y log `Motivo=token inválido` con error `IDX20803` | La API no puede contactar a Keycloak | Verificá que Keycloak esté arriba y que la `Authority` esté bien escrita |
 | Availability → Booking da 401 aunque el token es bueno | **Posible causa (no reproducida):** el `Program.cs` de Booking tiene `app.UseHttpsRedirection()`. Si Availability lo llama por `http://`, recibe una redirección a https y el header `Authorization` se puede perder | Correr Booking con el perfil `http` (`dotnet run --launch-profile http`) y volver a probar |
-| Booking recibe `Unauthenticated` al llamar a Payment | Payment tiene la autenticación activada pero Booking todavía no le manda el token | Activá la autenticación de Payment recién cuando la llamada gRPC de Booking use `AddTokenDeServicio("payment-api")` (ver 5) |
+| Booking recibe `Unauthenticated` al llamar a Payment | Payment rechazó el token. Booking lo toma como resultado incierto: la reserva queda retenida y después vence | Buscá `AUTH token rechazado` o `AUTH solicitud rechazada` en el log de Payment y revisá el `Motivo`. Verificá que Booking use `AddTokenDeServicio("payment-api")` (ver 5) |
 | `Falta Keycloak:ClientSecret` | No hiciste `user-secrets set`, o no estás en `Development`. **Aparece al pedir el token de servicio, no al arrancar**, y queda también en el log como `AUTH falló el pedido de token de servicio` | Ver 3.5 |
 | `unauthorized_client` al pedir un token | Secret incorrecto, o el client no tiene *Service accounts roles* | Verificá que el secret sea el de tu `.env`; si persiste, avisale a Dylan o Luciano |
 | `invalid_scope` al pedir un token | El scope no existe, el client no lo tiene asignado, o tenés el realm viejo | Hacé `docker compose down` y `docker compose up -d` (ver 3.1). Si sigue, avisale a Dylan o Luciano |
@@ -382,10 +384,10 @@ Pensado para justificar las decisiones del TP (puntos 3.e y 3.f):
 - [ ] `ClientSecret` en `user-secrets` (el de `booking-api`)
 
 **Payment**
-- [ ] Booking ya manda el token por gRPC
-- [ ] Referencia a `Shared.Auth` y `using Shared.Auth;`
-- [ ] Líneas de autenticación del `Program.cs` y `[Authorize]` descomentados
-- [ ] Decidido qué hacer con `/payment-test`
+- [x] Booking ya manda el token por gRPC
+- [x] Referencia a `Shared.Auth` y `using Shared.Auth;`: ya están en `dev` (#102)
+- [x] Validación en `Program.cs` y `[Authorize]` activos
+- [x] `/payment-test` borrado
 
 **Availability**
 - [ ] Bases de datos levantadas y Availability corriendo con `--launch-profile https` (`https://localhost:7113`)
