@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Payment.Business\Payment.Business.csproj" />
     <ProjectReference Include="..\Payment.Data\Payment.Data.csproj" />
     <ProjectReference Include="..\Payment.Domain\Payment.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Auth\Shared.Auth.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.Observability\Shared.Observability.csproj" />
   </ItemGroup>
 
