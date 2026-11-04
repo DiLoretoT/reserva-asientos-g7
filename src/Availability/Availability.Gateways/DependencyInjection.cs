@@ -9,6 +9,7 @@ using Availability.UseCases.Solicitudes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Azure.Messaging.ServiceBus;
 using Shared.Observability;
 
 namespace Availability.Gateways
@@ -29,7 +30,9 @@ namespace Availability.Gateways
             this IServiceCollection services,
             string connectionString,
             OpcionesBooking opcionesBooking,
-            bool simularBrokerSinRespuesta)
+            bool simularBrokerSinRespuesta,
+            string? serviceBusConnectionString,
+            string? serviceBusTopicName)
         {
             services.AddDbContext<AvailabilityDbContext>(options =>
                 options.UseSqlite(connectionString));
@@ -74,14 +77,45 @@ namespace Availability.Gateways
             services.AddTransient<IConsultaOcupacion>(sp => sp.GetRequiredService<ClienteBooking>());
             services.AddTransient<IConsultaEstadoSolicitud>(sp => sp.GetRequiredService<ClienteBooking>());
 
-            // Mientras no tengamos el connection string del broker, IPublicadorSolicitudes se
-            // resuelve con la simulación. Cuando lo tengamos, esta línea se reemplaza por el
-            // registro del publicador de Azure Service Bus y el caso de uso no cambia.
-            // Singleton por el mismo motivo que la consulta a Booking: no guarda datos de
-            // ningún pedido.
-            services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesSimulado(
-                simularBrokerSinRespuesta,
-                sp.GetRequiredService<ILogger<PublicadorSolicitudesSimulado>>()));
+            // Publicador de la solicitud: si la configuración trae la connection string
+            // del broker (ServiceBus:ConnectionString), se usa el publicador real de
+            // Azure Service Bus, con su ServiceBusClient como Singleton, porque el
+            // cliente es thread-safe y mantiene la conexión AMQP que es lo caro de armar.
+            // Si la clave no está configurada, queda la simulación, para que los entornos
+            // de los compañeros que no cargaron secretos sigan arrancando igual. El
+            // publicador se anota Singleton porque no guarda datos de ningún pedido.
+            if (string.IsNullOrWhiteSpace(serviceBusConnectionString))
+            {
+                services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesSimulado(
+                    simularBrokerSinRespuesta,
+                    sp.GetRequiredService<ILogger<PublicadorSolicitudesSimulado>>()));
+            }
+            else
+            {
+                services.AddSingleton(_ =>
+                {
+                    // Reintentos cortos a propósito: ReintentarEnvio (issue #92, ya mergeado)
+                    // reenvía las solicitudes que quedaron pendientes, así que exponer al
+                    // usuario los reintentos por defecto del SDK (varios intentos con
+                    // timeouts largos) haría esperar la página minutos por nada. Un solo
+                    // intento con timeout corto devuelve el "no respondió" en segundos y
+                    // el reenvío en segundo plano hace el resto.
+                    var opciones = new ServiceBusClientOptions
+                    {
+                        RetryOptions = new ServiceBusRetryOptions
+                        {
+                            MaxRetries = 1,
+                            TryTimeout = TimeSpan.FromSeconds(10),
+                            Delay = TimeSpan.FromSeconds(1)
+                        }
+                    };
+                    return new ServiceBusClient(serviceBusConnectionString, opciones);
+                });
+                services.AddSingleton<IPublicadorSolicitudes>(sp => new PublicadorSolicitudesServiceBus(
+                    sp.GetRequiredService<ServiceBusClient>(),
+                    serviceBusTopicName,
+                    sp.GetRequiredService<ILogger<PublicadorSolicitudesServiceBus>>()));
+            }
 
             // Auditoría de los casos de uso (issue #9). Singleton porque no guarda estado propio:
             // IAuditLogger e ITraceContext ya son Singleton (los registra AddObservability en
