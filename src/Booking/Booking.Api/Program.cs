@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Payment.Grpc;
 using Shared.Auth;
 using Shared.Observability;
+using Grpc.Net.ClientFactory;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddObservability("booking");
@@ -34,7 +35,8 @@ builder.Services.AddOptions<PaymentOptions>()
     .ValidateOnStart();
 builder.Services.AddGrpcClient<PaymentGrpc.PaymentGrpcClient>((sp, options) =>
     options.Address = new Uri(sp.GetRequiredService<IOptions<PaymentOptions>>().Value.Address))
-    .AddTokenDeServicio("payment-api");
+    .AddTokenDeServicio("payment-api")
+    .AddInterceptor<TraceIdGrpcClientInterceptor>();
 builder.Services.AddScoped<IClientePayment>(sp => new ClientePayment(
     sp.GetRequiredService<PaymentGrpc.PaymentGrpcClient>(),
     sp.GetRequiredService<IOptions<PaymentOptions>>(),
@@ -59,6 +61,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseTraceId();
 app.UseAuthentication();
 app.UseAuthorization();
 

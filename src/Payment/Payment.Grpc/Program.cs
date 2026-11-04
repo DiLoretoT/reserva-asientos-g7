@@ -2,10 +2,15 @@ using Payment.Business.Services;
 using Payment.Business.DTO;
 using Payment.Data;
 using Payment.Grpc.Services;
+using Shared.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddObservability("payment");
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(options =>
+{
+    options.Interceptors.Add<TraceIdGrpcInterceptor>();
+});
 builder.Services.AddPaymentData(builder.Configuration);
 builder.Services.AddScoped<PaymentService>();
 // Autorización con Keycloak (contracts/tokens.md): AddValidacionKeycloak() de Shared.Auth valida
@@ -15,6 +20,7 @@ builder.Services.AddScoped<PaymentService>();
 //builder.AddValidacionKeycloak();
 
 var app = builder.Build();
+app.UseTraceId();
 //app.UseAuthentication();
 //app.UseAuthorization();
 
