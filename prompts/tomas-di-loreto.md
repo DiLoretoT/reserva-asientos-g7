@@ -204,3 +204,9 @@ Ya mergeé el #88
 > Recién consulté GitHub y el merge no aparece
 
 Lo había aprobado y me faltó mergear, ahora sí
+
+## 2026-11-04 09:05
+
+Ayer nos juntamos con el equipo a probar toda la integración y surgió un error con keycloak apagado. Cuando un usuario sin sesión intenta reservar, Availability muestra la página de excepción, porque en /Cuenta/IniciarSesion salta un HttpRequestException contra localhost:8080 que nadie ataja. Con Booking y con el broker caídos el sitio responde sin romperse, y quiero lo mismo acá.
+Si Keycloak no responde, quiero que el usuario vea una página que diga que no pudimos iniciar sesión, con un enlace para volver a los eventos, y que el error quede en el log. Fijate también si cerrar sesión tiene el mismo problema y resolvelo igual. No toques Keycloak ni los otros servicios.
+Pasame qué cambiar y lo hago yo en el repo.
