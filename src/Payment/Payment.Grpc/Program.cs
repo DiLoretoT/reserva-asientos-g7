@@ -20,6 +20,7 @@ builder.Services.AddScoped<PaymentService>();
 //builder.AddValidacionKeycloak();
 
 var app = builder.Build();
+app.UseTraceId();
 //app.UseAuthentication();
 //app.UseAuthorization();
 
