@@ -1,0 +1,16 @@
+@* Se muestra cuando Keycloak no responde al iniciar sesión. Las páginas públicas siguen
+   funcionando, por eso se ofrece volver a los eventos. *@
+@{
+    ViewData["Title"] = "No pudimos iniciar sesión";
+}
+
+<div class="estado-vacio">
+    <h1 class="estado-vacio__titulo">No pudimos iniciar sesión</h1>
+
+    @* role="alert" porque es un error que el usuario tiene que conocer para decidir qué hacer. *@
+    <p role="alert">El servicio de inicio de sesión no está disponible en este momento. Probá de nuevo más tarde.</p>
+
+    <a class="boton" asp-controller="Eventos" asp-action="Index">
+        Volver a los eventos
+    </a>
+</div>
