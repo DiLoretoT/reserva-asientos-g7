@@ -11,6 +11,7 @@ public static class ObservabilityExtensions{
         builder.Services.AddSingleton<TraceIdEnricher>();
         builder.Services.AddTransient<TraceIdHttpClientHandler>();
         builder.Services.AddTransient<TraceIdGrpcClientInterceptor>();
+        builder.Services.AddTransient<TraceIdGrpcInterceptor>();
 
         var seqUrl = builder.Configuration["Seq:ServerUrl"]
             ?? "http://localhost:5341";
