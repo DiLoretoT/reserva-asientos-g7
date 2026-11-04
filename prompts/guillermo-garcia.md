@@ -70,3 +70,24 @@ Levantá Docker, Keycloak y la base de Booking. Después levantá Booking en Dev
 Si algo falla, avisame qué pasó y no lo arregles a ciegas.
 
 No hagas commit ni push.
+
+## 2026-11-03 09:30
+
+Vamos con el issue #17 de Booking, concurrencia entre réplicas y mensajes duplicados. Estoy en dev, que ya está actualizada. El issue dice que dos réplicas no pueden retener el mismo asiento y que un mismo mensaje no puede crear dos reservas.
+
+Ya tenemos casi todo armado de antes. Cuando hice la retención (retener o rechazar un asiento) que seria el issue 13, puse el índice único parcial ux_reserva_asiento_activo en el BookingDbContext, y por eso inserto directo en RetencionReservas y dejo que la base rechace al que llegue segundo, en vez de preguntar antes si el asiento está libre. Con eso los asientos me parece que ya están. Y también puse que, si la solicitud ya tiene reserva, se devuelve esa y no se crea otra, porque el broker puede entregar el mismo mensaje dos veces.
+
+Lo que me da dudas es que esa consulta previa por SolicitudId no me parece suficiente. Si dos réplicas reciben el mismo mensaje al mismo tiempo, las dos hacen la consulta, no encuentran nada y la segunda choca con la restricción única de solicitud_id y va a terminar en un error en vez de devolver el resultado de la primera. Es la misma condición de carrera de los asientos pero con la solicitud. Fijate si es así leyendo RetencionReservas y el BookingDbContext, y no lo des por hecho porque yo lo diga.
+
+Si es así, quiero resolverlo igual que lo de los asientos, que decida la base de datos: si el insert choca con la restricción reservas_solicitud_id_key, la réplica que pierde lee la reserva de la que ganó y devuelve esa. Tiene que andar tanto si la solicitud terminó retenida como si terminó rechazada, porque el insert de la rechazada también se puede pisar.
+
+Ojo que las dos violaciones de unicidad, la del asiento y la de la solicitud, tiran el mismo error, así que hay que distinguirlas, una es asiento ocupado y la otra es un duplicado.
+
+No toques Availability ni Payment, no cambies el esquema y no crees el consumidor del broker porque un compañero ya lo dejo para mergear en PR.
+
+No hagas commit ni push, quiero revisarlo antes.
+
+## 2026-11-03 10:10
+
+Compilá Booking.Api sin errores ni advertencias y probá contra PostgreSQL real: asiento libre, asiento ocupado y el mismo mensaje duplicado, también en paralelo desde dos DbContext.
+Si algo falla, avisame y no lo arregles a ciegas.
