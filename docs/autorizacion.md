@@ -316,6 +316,7 @@ Authorization: Bearer PEGAR_ACCESS_TOKEN
 | Token de otro servicio | Token de `booking-api` con `scope=payment-api`, usado contra Booking | 401 y log `Motivo=audiencia incorrecta` |
 | Token modificado | Cambiá una letra del final del token | 401 y log `Motivo=firma inválida` |
 | Token vencido | Pedí un token y esperá más de 5 min 30 s (dura 5 minutos, más 30 segundos de tolerancia) | 401 y log `Motivo=token vencido`. **Pendiente de probar** |
+| Sin claves de firma | Pedí un token, apagá Keycloak y reiniciá la API para que no tenga claves guardadas. Después usá ese token | 401 y log `Motivo=clave de firma no disponible` |
 
 **Ojo con la prueba de "otro servicio":** pedir un token con `client_id=availability-web` y `scope=payment-api` no sirve. Keycloak responde `invalid_scope` y no entrega ningún token. Para probar el 401 hay que pedirlo con `client_id=booking-api` y `scope=payment-api`, y usar ese token contra Booking.
 
@@ -330,7 +331,7 @@ Salen solos de `Shared.Auth`; no hay que programar nada. Todos empiezan con `AUT
 | Línea | Cuándo |
 |---|---|
 | `AUTH token aceptado. Quien=... Endpoint=GET /ruta` | La API aceptó el token |
-| `AUTH token rechazado. Motivo=... Endpoint=...` | Token vencido, firma inválida, audiencia incorrecta, emisor incorrecto o inválido |
+| `AUTH token rechazado. Motivo=... Endpoint=...` | Token vencido, clave de firma no disponible, firma inválida, audiencia incorrecta, emisor incorrecto o inválido |
 | `AUTH solicitud rechazada. Motivo=sin token Endpoint=...` | Llegó una llamada sin token |
 | `AUTH pidiendo token de servicio. ClientId=... Audiencia=...` | Un servicio pide un token a Keycloak |
 | `AUTH token de servicio obtenido. ClientId=... Audiencia=... VenceEnSegundos=...` | Keycloak lo entregó |
@@ -348,6 +349,7 @@ El token de servicio se **cachea** en memoria, uno por audiencia: se pide una ve
 |---|---|---|
 | 401 y log `Motivo=audiencia incorrecta` | El token es para otro servicio, o el `Audience` del `appsettings.json` no es el del propio servicio | Booking debe tener `booking-api` y Payment `payment-api`. Revisá también el argumento de `AddTokenDeServicio(...)` del que llama |
 | 401 y log `Motivo=emisor incorrecto` | La `Authority` no coincide con la del token (por ejemplo `127.0.0.1` en vez de `localhost`) | Usá exactamente `http://localhost:8080/realms/reserva-asientos` en todos lados |
+| 401 y log `Motivo=clave de firma no disponible` | La API no tiene la clave para comprobar la firma del token. Lo más común es que Keycloak esté apagado y la API no haya podido bajar sus claves. También puede aparecer si el token fue firmado con una clave que la API no conoce. No significa que el token esté alterado: en ese caso el motivo es `firma inválida` | Verificá que Keycloak esté arriba y volvé a probar. Cuando vuelve, la API se recupera sin reiniciarla. Si sigue, pedí un token nuevo |
 | 401 y log `Motivo=token inválido` con error `IDX20803` | La API no puede contactar a Keycloak | Verificá que Keycloak esté arriba y que la `Authority` esté bien escrita |
 | Availability → Booking da 401 aunque el token es bueno | **Posible causa (no reproducida):** el `Program.cs` de Booking tiene `app.UseHttpsRedirection()`. Si Availability lo llama por `http://`, recibe una redirección a https y el header `Authorization` se puede perder | Correr Booking con el perfil `http` (`dotnet run --launch-profile http`) y volver a probar |
 | Booking recibe `Unauthenticated` al llamar a Payment | Payment tiene la autenticación activada pero Booking todavía no le manda el token | Activá la autenticación de Payment recién cuando la llamada gRPC de Booking use `AddTokenDeServicio("payment-api")` (ver 5) |
