@@ -43,9 +43,9 @@ flowchart TD
 
 ### Availability
 
-Es el punto de entrada para consultar disponibilidad, solicitar una reserva y consultar el resultado de una solicitud. Al recibir una solicitud, verifica la existencia del asiento, genera un identificador único y publica un mensaje en el broker. Responde inmediatamente que la solicitud fue recibida.
+Es el punto de entrada para consultar disponibilidad, solicitar una reserva y consultar el resultado de una solicitud. Al recibir una solicitud, verifica la existencia del asiento, genera un identificador único, guarda la solicitud y publica un mensaje en el broker. Responde sin esperar a que Booking la procese. Si el broker no confirma la publicación, la solicitud queda guardada como pendiente de envío y Availability la reenvía en segundo plano.
 
-El enunciado requiere que este servicio siga Clean Architecture y utilice un dominio anémico.El enunciado requiere una API gRPC, arquitectura N-Layer y dominio anémico. La estructura concreta de capas se describe en `../docs/diagrams/Availability.md`.
+El enunciado requiere que este servicio siga Clean Architecture y utilice un dominio anémico. La estructura concreta de capas se describe en [`../Microservicios/Availability.md`](../Microservicios/Availability.md).
 
 ### Booking
 
