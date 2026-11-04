@@ -83,6 +83,7 @@ public static class KeycloakExtensions
                         var motivo = ctx.Exception switch
                         {
                             SecurityTokenExpiredException => "token vencido",
+                            SecurityTokenSignatureKeyNotFoundException => "clave de firma no disponible",
                             SecurityTokenInvalidSignatureException => "firma inválida",
                             SecurityTokenInvalidAudienceException => "audiencia incorrecta",
                             SecurityTokenInvalidIssuerException => "emisor incorrecto",
