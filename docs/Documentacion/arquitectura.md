@@ -60,7 +60,9 @@ El enunciado requiere una API gRPC, arquitectura N-Layer y dominio anémico. La 
 
 Transporta la solicitud de reserva desde Availability hasta Booking. Desacopla el momento en que se recibe la solicitud del momento en que se procesa.
 
-La tecnología y la configuración concreta del broker deben documentarse según la implementación.
+**Rol concreto:** Availability la registra y la publica en el tópico `grupo7-booking-topic`; Booking la consume de su suscripción con peek-lock, un mensaje por vez y confirmación manual. El mensaje lleva cinco campos y el `solicitudId` como identificador de la traza.
+
+**Justificación:** separa el momento de la recepción del momento de la resolución. Si Availability no logra publicar, la solicitud queda pendiente de envío y se reenvía en segundo plano (issue #92). Si Booking no está disponible, el mensaje espera en la entidad (TTL de 14 días). Si Payment no responde, el mensaje no se completa y se reentrega. La clave única por `solicitudId` evita reservas y cobros duplicados con reenvíos o réplicas simultáneas. La configuración y los valores reales están en `contracts/broker-config.md` (PR #86).
 
 ### Servidor de autorización
 
