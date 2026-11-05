@@ -87,7 +87,7 @@ Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availab
 
 | `Operacion` | `TraceId` | `Resultado` y `Motivo` |
 |---|---|---|
-| `procesar_reserva` | El `solicitudId` del mensaje del broker; si el mensaje es inválido y no trae uno, un Guid nuevo | `ok` · `rechazada` con `asiento_ocupado`, `pago_fallido`, `pago_no_disponible` o el motivo de DLQ (`campo_invalido`, etc.) · `error` con `fallo_transitorio`, `fallo_procesamiento` o `excepcion`. Agrega la propiedad `Duplicado` |
+| `procesar_reserva` | El `solicitudId` del mensaje del broker; si el mensaje es inválido y no trae uno, un Guid nuevo | `ok` con `procesada` · `rechazada` con `asiento_ocupado`, `pago_fallido`, `pago_no_disponible` o el motivo de DLQ (`json_invalido` o `campo_invalido`) · `error` con `pago_pendiente` (pago incierto), `cancelada`, `reentrega_pendiente`, `fallo_transitorio`, `fallo_procesamiento` o `excepcion`. Agrega la propiedad `Duplicado` |
 | `consultar_asientos_ocupados` | El `X-Trace-Id` del pedido, o un Guid nuevo si no viene | `ok` · `error` (`excepcion`) |
 | `consultar_solicitud` | El `X-Trace-Id` del pedido (Availability manda el `solicitudId`), o un Guid nuevo si no viene | `ok` · `rechazada` con `solicitud_inexistente` (Booking todavía no la procesó, es el 404) · `error` (`excepcion`) |
 

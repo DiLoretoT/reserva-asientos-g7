@@ -61,7 +61,7 @@ Booking debe comunicarse con Payment mediante gRPC para solicitar el procesamien
 
 gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los servicios y mensajes. Esto permite que ambos componentes compartan una definición explícita de la operación.
 
-**Contrato del proyecto:** `Payment/Payment.API/Protos/payment.proto`. Booking lo usa desde `Booking.Data/Payment` (`ClientePayment`), con un plazo máximo por llamada y su token de servicio.
+**Contrato del proyecto:** `src/Payment/Payment.Grpc/Protos/Payment.proto`. Booking lo usa desde `Booking.Data/Payment` (`ClientePayment`), con un plazo máximo por llamada y su token de servicio.
 
 ## 7. Persistencia y SQLite
 

@@ -45,14 +45,14 @@ Las rutas de Availability son páginas del sitio MVC, no una API REST. Las llama
 
 ## 4. Contrato gRPC de Payment
 
-El contrato gRPC está definido por el archivo: Payment/Payment.API/Protos/payment.proto
+El contrato gRPC está definido por el archivo: src/Payment/Payment.Grpc/Protos/Payment.proto
 
 | Elemento                    | Definición                    |
 | --------------------------- | ------------------------------|
 | Servicio gRPC               | "Payment.Grpc"                |
 | Método invocado por Booking | `ProcessPayment`              |
 | Mensaje de solicitud        | `ProcessPaymentRequest`       |
-| Mensaje de respuesta        | `ProcessPaymentResult`        |
+| Mensaje de respuesta        | `ProcessPaymentReply`         |
 | Dirección / puerto          | `Payment:Address` de Booking, `http://localhost:5043` en desarrollo |
 
 ### Secuencia esperada
