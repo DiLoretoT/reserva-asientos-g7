@@ -28,10 +28,12 @@ El anillo 2 define las interfaces que necesita, y las clases de `Availability.Ga
 Booking REST API y Payment gRPC API deben seguir una arquitectura N-Layer. La separación en capas permite organizar responsabilidades y reducir el acoplamiento entre la entrada de la aplicación, la lógica de aplicación y la infraestructura.
 
 **En Booking, la estructura es:**
-- 
-- 
-- 
-- 
+- `Booking.Api`: exposición de la API REST (los dos endpoints que consulta Availability), consumidor del broker y proceso en segundo plano del vencimiento.
+- `Booking.Business`: reglas de la reserva (retener o rechazar, procesar el cobro, consultar y vencer reservas). Usa el `DbContext` directo, sin otra capa de repositorios encima.
+- `Booking.Data`: `BookingDbContext` con EF Core y PostgreSQL, migraciones y el cliente gRPC hacia Payment.
+- `Booking.Domain`: la entidad `Reserva` y sus enums de estado y motivo de rechazo. Es anémica, sin reglas.
+
+Las capas se llaman en este sentido: `Api` → `Business` → `Data` → `Domain`. `Api` también registra `Data` al arrancar (el `DbContext` y el cliente de Payment), pero las reglas pasan siempre por `Business`. Las reglas de integridad que importan, como no tener dos reservas activas del mismo asiento, las hace cumplir la base de datos con índices y restricciones únicas, porque las réplicas de Booking solo comparten la base. El detalle de cada archivo está en [`../Microservicios/Booking.md`](../Microservicios/Booking.md).
 
 En Payment, la estructura es:
 - `Payment.API`: exposición del servicio gRPC.
@@ -51,7 +53,21 @@ Availability publica una solicitud y responde sin esperar a que Booking termine 
 
 Esta decisión desacopla la recepción de solicitudes de su procesamiento. También implica que el usuario debe consultar el resultado posteriormente y que el sistema debe contemplar estados intermedios.
 
-**Tecnología elegida:** completar con el broker utilizado y justificar por qué fue seleccionado.
+**Tecnología elegida:** Service Bus, propuesto por la cátedra. Es un broker administrado de Azure con tópicos y suscripciones, y el grupo ya verificó su configuración contra el namespace real (valores en `contracts/broker-config.md`, PR #86).
+
+**Topología:** un tópico (`grupo7-booking-topic`) con una suscripción (`booking`) que consume Booking; en desarrollo cada integrante usa una suscripción propia `booking-<nombre>`, y la demo consume de `booking`. Sin sesiones. La detección de duplicados del tópico queda desactivada: la protección la da la clave única de Booking, ya verificada contra la entidad real.
+
+**Mensaje:** cinco campos JSON camelCase (`solicitudId`, `eventoId`, `asientoId`, `usuarioId`, `fechaSolicitud`), según el contrato mergeado `contracts/broker.md` (PR #85). El monto no viaja: el contrato del broker no lo lleva, y Booking usa un importe por configuración, `Booking:MontoReserva` (hoy 1000, en `src/Booking/Booking.Business/BookingOptions.cs:10` y `appsettings.json:8`), que pasa como monto del cobro.
+
+**Traza:** el `solicitudId` es la traza de toda la cadena: viaja como MessageId y CorrelationId, es la clave de idempotencia de Booking y llega como TraceId a los logs del consumidor. Payment recibe el `BookingId` de la reserva y sus logs lo registran; unificar esa referencia con el `solicitudId` queda como tema del issue #42.
+
+**Idempotencia:** la clave única `reservas_solicitud_id_key` en la tabla de reservas de Booking, con la consulta previa de la retención. Si dos réplicas procesan el mismo mensaje a la vez, la violación de la clave devuelve la reserva existente y el mensaje se completa sin duplicar (control de concurrencia, issue #17 y PR #98).
+
+**Publicación:** un único intento de envío; el `ServiceBusClient` se crea con reintentos cortos (un reintento, tiempo de espera de 10 segundos). Con el buzón de salida del issue #92: si el envío no se confirma, la solicitud queda pendiente de envío y un servicio en segundo plano la republica cada 15 segundos con el mismo `solicitudId`. Si el primer envío sí había llegado, ese reenvío puede publicar dos veces; lo descarta la clave única de Booking.
+
+**DLQ y máximo de entregas:** solo los mensajes inválidos van a la DLQ, con los motivos `json_invalido` y `campo_invalido`. El máximo de entregas real de la entidad es 10; la pareja de Booking decide si el consumidor fuerza el ingreso a la DLQ antes de esa cifra (anotado en `broker-config.md`).
+
+**Secretos:** el connection string no entra al repositorio; cada máquina lo guarda en user-secrets o variables de entorno. Las pruebas del publicador contra Azure las corrió este módulo (sonda y prueba de publicación del PR #93); las del consumidor, Jonathan (documentadas en `docs/booking-servicebus.md`).
 
 ## 6. gRPC para la comunicación con Payment
 
@@ -59,7 +75,7 @@ Booking debe comunicarse con Payment mediante gRPC para solicitar el procesamien
 
 gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los servicios y mensajes. Esto permite que ambos componentes compartan una definición explícita de la operación.
 
-**Contrato del proyecto:** `Payment/Payment.API/Protos/payment.proto`.
+**Contrato del proyecto:** `src/Payment/Payment.Grpc/Protos/Payment.proto`. Booking lo usa desde `Booking.Data/Payment` (`ClientePayment`), con un plazo máximo por llamada y su token de servicio.
 
 ## 7. Persistencia y SQLite
 
@@ -68,7 +84,7 @@ gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los s
 | Servicio     | Motor     | Ubicación                                               |
 |--------------|-----------|---------------------------------------------------------|
 | Availability | SQLite    |`Availability/Availability.Gateways/DependencyInjection.cs`|
-| Booking      | Completar | Completar                                               |
+| Booking      | PostgreSQL 17 | `Booking/Booking.Api/Program.cs` y `Booking/Booking.Data/BookingDbContext.cs` |
 | Payment      | SQLite    |`Payment/Payment.Data/Persintence/DependencyInjection.cs`|
 
 ## 8. Auditoría
@@ -77,7 +93,7 @@ Se agregan logs de auditoría para identificar el inicio y el fin de una cadena 
 
 **Documentar el formato, destino y campos de los registros reales.**
 
-Availability escribe logs estructurados con Serilog, por medio de `Shared.Observability`, en la consola y en Seq. Los campos y las operaciones están en [`contracts/logs.md`](../../contracts/logs.md).
+Availability y Booking escriben logs estructurados con Serilog, por medio de `Shared.Observability`, en la consola y en Seq. Los campos y las operaciones están en [`contracts/logs.md`](../../contracts/logs.md).
 
 
 ## 9. Autenticación entre microservicios

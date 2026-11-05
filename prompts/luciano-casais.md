@@ -15,3 +15,5 @@ Quedo bien. Solo dos cosas por que el repo se actualizo hoy:
 feat/auth-booking ya está en dev (#84). Donde dice "cuando esté mergeada" (3.3, 4, 5 y checklist), poné que la referencia y la validación de Booking ya están en dev y no hay que agregarlas.
 En la sección 6, paso 2, agregá que Booking se corre con dotnet run --launch-profile http.
 después subila tranqui para la integracion que cuando esté activo Payment le damos una última pasada.
+
+Transforma el diagrama a formato .svg para que se vea mas claro

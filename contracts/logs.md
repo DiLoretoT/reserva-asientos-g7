@@ -3,7 +3,7 @@
 **Módulo:** Broker, Logs e Integración · Issue #37  
 **Responsable:** Gianluca · **Revisa:** Facundo
 
-Este documento describe los criterios de trazabilidad y logging de los servicios Availability, Booking y Payment. La infraestructura compartida de observabilidad se encuentra en `Shared.Observability`. 
+Este documento describe los criterios de trazabilidad y logging de los servicios Availability, Booking y Payment. La infraestructura compartida de observabilidad se encuentra en `Shared.Observability`.
 
 ## Componentes compartidos: Shared.Observability
 
@@ -102,8 +102,8 @@ La configuración de Serilog establece el nivel mínimo `Information`.
 
 | Servicio | Alcance documentado |
 |---|---|
-| Availability | Operaciones de consulta de eventos y asientos, solicitudes de reserva y reintentos de envío. |
-| Booking | Requests HTTP, procesamiento de solicitudes de reserva y llamadas gRPC a Payment. |
+| Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `reintentar_envio`, `consultar_solicitud` (detalle abajo) |
+| Booking | `procesar_reserva`, `consultar_asientos_ocupados`, `consultar_solicitud` (detalle abajo) |
 | Payment | Requests HTTP, procesamiento de llamadas gRPC y eventos del servicio. |
 
 ### Availability
@@ -131,6 +131,14 @@ La trazabilidad se establece mediante el middleware `UseTraceId` para los reques
 Durante el procesamiento de una solicitud recibida desde el broker, Booking utiliza el `solicitudId` como `TraceId`.
 
 En las llamadas a Payment mediante gRPC, el interceptor `TraceIdGrpcClientInterceptor` transmite el identificador en la metadata `x-trace-id`.
+
+| `Operacion` | `TraceId` | `Resultado` y `Motivo` |
+|---|---|---|
+| `procesar_reserva` | El `solicitudId` del mensaje del broker; si el mensaje es inválido y no trae uno, un Guid nuevo | `ok` con `procesada` · `rechazada` con `asiento_ocupado`, `pago_fallido`, `pago_no_disponible` o el motivo de DLQ (`json_invalido` o `campo_invalido`) · `error` con `pago_pendiente` (pago incierto), `cancelada`, `reentrega_pendiente`, `fallo_transitorio`, `fallo_procesamiento` o `excepcion`. Agrega la propiedad `Duplicado` |
+| `consultar_asientos_ocupados` | El `X-Trace-Id` del pedido, o un Guid nuevo si no viene | `ok` · `error` (`excepcion`) |
+| `consultar_solicitud` | El `X-Trace-Id` del pedido (Availability manda el `solicitudId`), o un Guid nuevo si no viene | `ok` · `rechazada` con `solicitud_inexistente` (Booking todavía no la procesó, es el 404) · `error` (`excepcion`) |
+
+Un 401 por token inválido lo resuelve el middleware de autenticación antes del controller y no genera auditoría de Booking. El vencimiento automático de reservas no se audita: no nace de una solicitud ni de un pedido y corre cada pocos segundos casi siempre sin hacer nada.
 
 Los logs se envían a Seq identificados con la propiedad `Servicio = booking`.
 

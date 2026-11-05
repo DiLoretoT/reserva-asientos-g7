@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1720" width="1820" height="1720" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif">
+<title>Booking: diagrama de clases por capa (N-Layer)</title>
+<defs>
+<marker id="punta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2c2c2a"/></marker>
+<marker id="punta-abierta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#2c2c2a" stroke-width="1.4"/></marker>
+<marker id="triangulo" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#ffffff" stroke="#2c2c2a" stroke-width="1.2"/></marker>
+<marker id="rombo" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="14" markerHeight="10" orient="auto"><path d="M1,5 L7,1 L13,5 L7,9 z" fill="#ffffff" stroke="#2c2c2a" stroke-width="1.2"/></marker>
+<style>
+  .titulo { font-size: 22px; font-weight: 700; fill: #2c2c2a; }
+  .subtitulo { font-size: 13px; fill: #55534d; }
+  .banda-titulo { font-size: 16px; font-weight: 700; fill: #2c2c2a; }
+  .banda-sub { font-size: 12.5px; fill: #55534d; }
+  .estereotipo { font-size: 11px; font-style: italic; fill: #5f5d57; }
+  .nombre { font-size: 13.5px; font-weight: 700; fill: #2c2c2a; }
+  .miembro { font-size: 12px; fill: #33322e; }
+  .nota { font-size: 11.5px; fill: #5f5d57; }
+  .nota-titulo { font-size: 12px; font-weight: 700; fill: #4a4535; }
+  .nota-enlace { stroke: #b9a874; stroke-width: 1.2; fill: none; stroke-dasharray: 2 3; }
+  .etiqueta { font-size: 11px; font-style: italic; fill: #55534d; }
+  .asociacion { stroke: #2c2c2a; stroke-width: 1.4; fill: none; marker-end: url(#punta); }
+  .asociacion-sin-punta { stroke: #2c2c2a; stroke-width: 1.4; fill: none; }
+  .dependencia { stroke: #2c2c2a; stroke-width: 1.3; fill: none; stroke-dasharray: 5 4; marker-end: url(#punta-abierta); }
+  .implementa { stroke: #2c2c2a; stroke-width: 1.3; fill: none; stroke-dasharray: 5 4; marker-end: url(#triangulo); }
+  .agregacion { stroke: #2c2c2a; stroke-width: 1.4; fill: none; marker-start: url(#rombo); marker-end: url(#punta); }
+</style>
+</defs>
+<rect x="0" y="0" width="1820" height="1720" fill="#ffffff"/>
+<text class="titulo" x="40" y="40">Booking · diagrama de clases (N-Layer)</text>
+<text class="subtitulo" x="1780" y="40" text-anchor="end">Clases reales del código, ordenadas por capa</text>
+<rect x="20" y="70" width="1780" height="404" rx="12" fill="#f5f8fd" stroke="#4a77b4" stroke-opacity="0.35"/>
+<rect x="20" y="496" width="1780" height="410" rx="12" fill="#f4faf6" stroke="#3f8a5a" stroke-opacity="0.35"/>
+<rect x="20" y="928" width="1780" height="378" rx="12" fill="#fdf9f1" stroke="#b9802b" stroke-opacity="0.35"/>
+<rect x="20" y="1328" width="1780" height="362" rx="12" fill="#f9f6fd" stroke="#7a5aa8" stroke-opacity="0.35"/>
+<g>
+<rect x="40" y="132" width="360" height="168" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M41,178 L41,138 Q41,133 46,133 L394,133 Q399,133 399,138 L399,178 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="220.0" y="154" text-anchor="middle">«Controller»</text>
+<text class="nombre" x="220.0" y="173" text-anchor="middle">ReservasController</text>
+<line x1="40" y1="178" x2="400" y2="178" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="50" y="196">- consulta : ConsultaReservas</text>
+<text class="miembro" x="50" y="212">- auditoria : IAuditLogger</text>
+<line x1="40" y1="220" x2="400" y2="220" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="50" y="238">+ AsientosOcupados(eventoId : Guid)</text>
+<text class="miembro" x="50" y="254">      : Task&lt;AsientosOcupadosRespuesta&gt;</text>
+<text class="miembro" x="50" y="270">+ EstadoSolicitud(solicitudId : Guid)</text>
+<text class="miembro" x="50" y="286">      : Task&lt;ActionResult&lt;EstadoSolicitud&gt;&gt;</text>
+</g>
+<g>
+<rect x="470" y="132" width="300" height="94" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M471,178 L471,138 Q471,133 476,133 L764,133 Q769,133 769,138 L769,178 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="620.0" y="154" text-anchor="middle">«record»</text>
+<text class="nombre" x="620.0" y="173" text-anchor="middle">AsientosOcupadosRespuesta</text>
+<line x1="470" y1="178" x2="770" y2="178" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="480" y="196">+ EventoId : Guid</text>
+<text class="miembro" x="480" y="212">+ AsientosOcupados : List&lt;AsientoOcupado&gt;</text>
+</g>
+<g>
+<rect x="800" y="132" width="320" height="136" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M801,178 L801,138 Q801,133 806,133 L1114,133 Q1119,133 1119,138 L1119,178 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="960.0" y="154" text-anchor="middle">«BackgroundService»</text>
+<text class="nombre" x="960.0" y="173" text-anchor="middle">ConsumidorSolicitudesServiceBus</text>
+<line x1="800" y1="178" x2="1120" y2="178" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="810" y="196">- processor : ServiceBusProcessor</text>
+<text class="miembro" x="810" y="212">- manejador : ManejadorSolicitudServiceBus</text>
+<text class="miembro" x="810" y="228">- trace : ITraceContext</text>
+<line x1="800" y1="236" x2="1120" y2="236" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="810" y="254"># ExecuteAsync(stoppingToken) : Task</text>
+</g>
+<g>
+<rect x="1150" y="132" width="320" height="126" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M1151,178 L1151,138 Q1151,133 1156,133 L1464,133 Q1469,133 1469,138 L1469,178 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="1310.0" y="154" text-anchor="middle">«Options»</text>
+<text class="nombre" x="1310.0" y="173" text-anchor="middle">ServiceBusOptions</text>
+<line x1="1150" y1="178" x2="1470" y2="178" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="1160" y="196">+ Enabled : bool</text>
+<text class="miembro" x="1160" y="212">+ ConnectionString : string?</text>
+<text class="miembro" x="1160" y="228">+ TopicName : string</text>
+<text class="miembro" x="1160" y="244">+ SubscriptionName : string</text>
+</g>
+<g>
+<rect x="1500" y="132" width="280" height="126" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M1501,178 L1501,138 Q1501,133 1506,133 L1774,133 Q1779,133 1779,138 L1779,178 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="1640.0" y="154" text-anchor="middle">«static»</text>
+<text class="nombre" x="1640.0" y="173" text-anchor="middle">ServiceBusExtensions</text>
+<line x1="1500" y1="178" x2="1780" y2="178" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="1510" y="196">+ AddBookingServiceBus(services, config)</text>
+<text class="miembro" x="1510" y="212">      : IServiceCollection</text>
+<text class="miembro" x="1510" y="228">+ CrearOpcionesProcessor()</text>
+<text class="miembro" x="1510" y="244">      : ServiceBusProcessorOptions</text>
+</g>
+<g>
+<rect x="40" y="330" width="220" height="78" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M41,376 L41,336 Q41,331 46,331 L254,331 Q259,331 259,336 L259,376 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="150.0" y="352" text-anchor="middle">«static»</text>
+<text class="nombre" x="150.0" y="371" text-anchor="middle">BookingJson</text>
+<line x1="40" y1="376" x2="260" y2="376" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="50" y="394">+ Configurar(options) : void</text>
+</g>
+<g>
+<rect x="470" y="330" width="300" height="120" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M471,376 L471,336 Q471,331 476,331 L764,331 Q769,331 769,336 L769,376 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="620.0" y="352" text-anchor="middle">«BackgroundService»</text>
+<text class="nombre" x="620.0" y="371" text-anchor="middle">VencimientoReservasService</text>
+<line x1="470" y1="376" x2="770" y2="376" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="480" y="394">- scopeFactory : IServiceScopeFactory</text>
+<text class="miembro" x="480" y="410">- opciones : IOptions&lt;BookingOptions&gt;</text>
+<line x1="470" y1="418" x2="770" y2="418" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="480" y="436"># ExecuteAsync(stoppingToken) : Task</text>
+</g>
+<g>
+<rect x="800" y="330" width="320" height="120" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M801,360 L801,336 Q801,331 806,331 L1114,331 Q1119,331 1119,336 L1119,360 Z" fill="#e6eef9"/>
+<text class="nombre" x="960.0" y="355" text-anchor="middle">ManejadorSolicitudServiceBus</text>
+<line x1="800" y1="360" x2="1120" y2="360" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="810" y="378">- scopes : IServiceScopeFactory</text>
+<text class="miembro" x="810" y="394">- trace : ITraceContext</text>
+<text class="miembro" x="810" y="410">- auditoria : IAuditLogger</text>
+<line x1="800" y1="418" x2="1120" y2="418" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="810" y="436">+ ProcesarAsync(args, stoppingToken) : Task</text>
+</g>
+<g>
+<rect x="1150" y="330" width="320" height="94" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M1151,376 L1151,336 Q1151,331 1156,331 L1464,331 Q1469,331 1469,336 L1469,376 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="1310.0" y="352" text-anchor="middle">«static»</text>
+<text class="nombre" x="1310.0" y="371" text-anchor="middle">ValidadorSolicitudServiceBus</text>
+<line x1="1150" y1="376" x2="1470" y2="376" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="1160" y="394">+ Validar(mensaje : ServiceBusReceivedMessage)</text>
+<text class="miembro" x="1160" y="410">      : ValidacionSolicitud</text>
+</g>
+<g>
+<rect x="1500" y="330" width="280" height="110" rx="6" fill="#ffffff" stroke="#4a77b4" stroke-width="1.4"/>
+<path d="M1501,376 L1501,336 Q1501,331 1506,331 L1774,331 Q1779,331 1779,336 L1779,376 Z" fill="#e6eef9"/>
+<text class="estereotipo" x="1640.0" y="352" text-anchor="middle">«record»</text>
+<text class="nombre" x="1640.0" y="371" text-anchor="middle">ValidacionSolicitud</text>
+<line x1="1500" y1="376" x2="1780" y2="376" stroke="#4a77b4" stroke-width="1"/>
+<text class="miembro" x="1510" y="394">+ Solicitud : SolicitudReserva?</text>
+<text class="miembro" x="1510" y="410">+ MotivoDlq : string?</text>
+<text class="miembro" x="1510" y="426">+ TraceId : Guid?</text>
+</g>
+<g>
+<rect x="40" y="558" width="400" height="136" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M41,588 L41,564 Q41,559 46,559 L434,559 Q439,559 439,564 L439,588 Z" fill="#e3f2e8"/>
+<text class="nombre" x="240.0" y="583" text-anchor="middle">ConsultaReservas</text>
+<line x1="40" y1="588" x2="440" y2="588" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="50" y="606">- db : BookingDbContext</text>
+<line x1="40" y1="614" x2="440" y2="614" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="50" y="632">+ ObtenerAsientosOcupadosAsync(eventoId : Guid)</text>
+<text class="miembro" x="50" y="648">      : Task&lt;List&lt;AsientoOcupado&gt;&gt;</text>
+<text class="miembro" x="50" y="664">+ ObtenerEstadoSolicitudAsync(solicitudId : Guid)</text>
+<text class="miembro" x="50" y="680">      : Task&lt;EstadoSolicitud?&gt;</text>
+</g>
+<g>
+<rect x="470" y="558" width="300" height="88" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M471,588 L471,564 Q471,559 476,559 L764,559 Q769,559 769,564 L769,588 Z" fill="#e3f2e8"/>
+<text class="nombre" x="620.0" y="583" text-anchor="middle">VencimientoReservas</text>
+<line x1="470" y1="588" x2="770" y2="588" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="480" y="606">- db : BookingDbContext</text>
+<line x1="470" y1="614" x2="770" y2="614" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="480" y="632">+ VencerAsync(cancellationToken) : Task&lt;int&gt;</text>
+</g>
+<g>
+<rect x="800" y="558" width="320" height="152" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M801,588 L801,564 Q801,559 806,559 L1114,559 Q1119,559 1119,564 L1119,588 Z" fill="#e3f2e8"/>
+<text class="nombre" x="960.0" y="583" text-anchor="middle">ProcesamientoSolicitudReserva</text>
+<line x1="800" y1="588" x2="1120" y2="588" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="810" y="606">- db : BookingDbContext</text>
+<text class="miembro" x="810" y="622">- retencion : RetencionReservas</text>
+<text class="miembro" x="810" y="638">- payment : IClientePayment</text>
+<text class="miembro" x="810" y="654">- opciones : IOptions&lt;BookingOptions&gt;</text>
+<line x1="800" y1="662" x2="1120" y2="662" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="810" y="680">+ ProcesarAsync(solicitud, cancellationToken)</text>
+<text class="miembro" x="810" y="696">      : Task&lt;ResultadoProcesamientoReserva&gt;</text>
+</g>
+<g>
+<rect x="1150" y="558" width="320" height="120" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M1151,588 L1151,564 Q1151,559 1156,559 L1464,559 Q1469,559 1469,564 L1469,588 Z" fill="#e3f2e8"/>
+<text class="nombre" x="1310.0" y="583" text-anchor="middle">RetencionReservas</text>
+<line x1="1150" y1="588" x2="1470" y2="588" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="1160" y="606">- db : BookingDbContext</text>
+<text class="miembro" x="1160" y="622">- opciones : IOptions&lt;BookingOptions&gt;</text>
+<line x1="1150" y1="630" x2="1470" y2="630" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="1160" y="648">+ RetenerORechazarAsync(solicitud)</text>
+<text class="miembro" x="1160" y="664">      : Task&lt;Reserva&gt;</text>
+</g>
+<g>
+<rect x="1500" y="558" width="280" height="110" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M1501,604 L1501,564 Q1501,559 1506,559 L1774,559 Q1779,559 1779,564 L1779,604 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="1640.0" y="580" text-anchor="middle">«Options»</text>
+<text class="nombre" x="1640.0" y="599" text-anchor="middle">BookingOptions</text>
+<line x1="1500" y1="604" x2="1780" y2="604" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="1510" y="622">+ RetentionMinutes : int</text>
+<text class="miembro" x="1510" y="638">+ ExpirationIntervalSeconds : int</text>
+<text class="miembro" x="1510" y="654">+ MontoReserva : decimal</text>
+</g>
+<g>
+<rect x="40" y="756" width="190" height="94" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M41,802 L41,762 Q41,757 46,757 L224,757 Q229,757 229,762 L229,802 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="135.0" y="778" text-anchor="middle">«record»</text>
+<text class="nombre" x="135.0" y="797" text-anchor="middle">AsientoOcupado</text>
+<line x1="40" y1="802" x2="230" y2="802" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="50" y="820">+ AsientoId : Guid</text>
+<text class="miembro" x="50" y="836">+ Estado : EstadoReserva</text>
+</g>
+<g>
+<rect x="250" y="756" width="190" height="126" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M251,802 L251,762 Q251,757 256,757 L434,757 Q439,757 439,762 L439,802 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="345.0" y="778" text-anchor="middle">«record»</text>
+<text class="nombre" x="345.0" y="797" text-anchor="middle">EstadoSolicitud</text>
+<line x1="250" y1="802" x2="440" y2="802" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="260" y="820">+ SolicitudId : Guid</text>
+<text class="miembro" x="260" y="836">+ AsientoId : Guid</text>
+<text class="miembro" x="260" y="852">+ Estado : EstadoReserva</text>
+<text class="miembro" x="260" y="868">+ Motivo : MotivoRechazo?</text>
+</g>
+<g>
+<rect x="800" y="756" width="210" height="126" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M801,802 L801,762 Q801,757 806,757 L1004,757 Q1009,757 1009,762 L1009,802 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="905.0" y="778" text-anchor="middle">«record»</text>
+<text class="nombre" x="905.0" y="797" text-anchor="middle">SolicitudReserva</text>
+<line x1="800" y1="802" x2="1010" y2="802" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="810" y="820">+ SolicitudId : Guid</text>
+<text class="miembro" x="810" y="836">+ EventoId : Guid</text>
+<text class="miembro" x="810" y="852">+ AsientoId : Guid</text>
+<text class="miembro" x="810" y="868">+ UsuarioId : string</text>
+</g>
+<g>
+<rect x="1150" y="756" width="320" height="126" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M1151,802 L1151,762 Q1151,757 1156,757 L1464,757 Q1469,757 1469,762 L1469,802 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="1310.0" y="778" text-anchor="middle">«record»</text>
+<text class="nombre" x="1310.0" y="797" text-anchor="middle">ResultadoProcesamientoReserva</text>
+<line x1="1150" y1="802" x2="1470" y2="802" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="1160" y="820">+ Estado : EstadoProcesamientoReserva</text>
+<text class="miembro" x="1160" y="836">+ EsDuplicado : bool</text>
+<text class="miembro" x="1160" y="852">+ Motivo : MotivoRechazo?</text>
+<text class="miembro" x="1160" y="868">+ PagoInconsistente : bool</text>
+</g>
+<g>
+<rect x="1500" y="756" width="280" height="126" rx="6" fill="#ffffff" stroke="#3f8a5a" stroke-width="1.4"/>
+<path d="M1501,802 L1501,762 Q1501,757 1506,757 L1774,757 Q1779,757 1779,762 L1779,802 Z" fill="#e3f2e8"/>
+<text class="estereotipo" x="1640.0" y="778" text-anchor="middle">«enum»</text>
+<text class="nombre" x="1640.0" y="797" text-anchor="middle">EstadoProcesamientoReserva</text>
+<line x1="1500" y1="802" x2="1780" y2="802" stroke="#3f8a5a" stroke-width="1"/>
+<text class="miembro" x="1510" y="820">PendientePago</text>
+<text class="miembro" x="1510" y="836">Finalizada</text>
+<text class="miembro" x="1510" y="852">Rechazada</text>
+<text class="miembro" x="1510" y="868">Conflicto</text>
+</g>
+<g>
+<rect x="470" y="990" width="300" height="104" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4"/>
+<path d="M471,1036 L471,996 Q471,991 476,991 L764,991 Q769,991 769,996 L769,1036 Z" fill="#f8ecd8"/>
+<text class="estereotipo" x="620.0" y="1012" text-anchor="middle">«DbContext»</text>
+<text class="nombre" x="620.0" y="1031" text-anchor="middle">BookingDbContext</text>
+<line x1="470" y1="1036" x2="770" y2="1036" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="480" y="1054">+ Reservas : DbSet&lt;Reserva&gt;</text>
+<line x1="470" y1="1062" x2="770" y2="1062" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="480" y="1080"># OnModelCreating(modelBuilder) : void</text>
+</g>
+<g>
+<rect x="800" y="990" width="320" height="94" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4"/>
+<path d="M801,1036 L801,996 Q801,991 806,991 L1114,991 Q1119,991 1119,996 L1119,1036 Z" fill="#f8ecd8"/>
+<text class="estereotipo" x="960.0" y="1012" text-anchor="middle">«interface»</text>
+<text class="nombre" x="960.0" y="1031" text-anchor="middle">IClientePayment</text>
+<line x1="800" y1="1036" x2="1120" y2="1036" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="810" y="1054">+ CobrarAsync(reservaId, monto, cancellationToken)</text>
+<text class="miembro" x="810" y="1070">      : Task&lt;ResultadoPago&gt;</text>
+</g>
+<g>
+<rect x="1150" y="990" width="320" height="136" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4"/>
+<path d="M1151,1020 L1151,996 Q1151,991 1156,991 L1464,991 Q1469,991 1469,996 L1469,1020 Z" fill="#f8ecd8"/>
+<text class="nombre" x="1310.0" y="1015" text-anchor="middle">ClientePayment</text>
+<line x1="1150" y1="1020" x2="1470" y2="1020" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="1160" y="1038">- client : PaymentGrpcClient</text>
+<text class="miembro" x="1160" y="1054">- options : IOptions&lt;PaymentOptions&gt;</text>
+<text class="miembro" x="1160" y="1070">- obtenerToken : Func&lt;CancellationToken, Task&gt;</text>
+<line x1="1150" y1="1078" x2="1470" y2="1078" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="1160" y="1096">+ CobrarAsync(reservaId, monto, cancellationToken)</text>
+<text class="miembro" x="1160" y="1112">      : Task&lt;ResultadoPago&gt;</text>
+</g>
+<g>
+<rect x="1500" y="990" width="280" height="94" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4" stroke-dasharray="6 4"/>
+<path d="M1501,1036 L1501,996 Q1501,991 1506,991 L1774,991 Q1779,991 1779,996 L1779,1036 Z" fill="#f8ecd8"/>
+<text class="estereotipo" x="1640.0" y="1012" text-anchor="middle">«generado de Payment.proto»</text>
+<text class="nombre" x="1640.0" y="1031" text-anchor="middle">PaymentGrpcClient</text>
+<line x1="1500" y1="1036" x2="1780" y2="1036" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="1510" y="1054">+ ProcessPaymentAsync(request)</text>
+<text class="miembro" x="1510" y="1070">      : ProcessPaymentReply</text>
+</g>
+<g>
+<rect x="800" y="1156" width="220" height="126" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4"/>
+<path d="M801,1202 L801,1162 Q801,1157 806,1157 L1014,1157 Q1019,1157 1019,1162 L1019,1202 Z" fill="#f8ecd8"/>
+<text class="estereotipo" x="910.0" y="1178" text-anchor="middle">«enum»</text>
+<text class="nombre" x="910.0" y="1197" text-anchor="middle">ResultadoPago</text>
+<line x1="800" y1="1202" x2="1020" y2="1202" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="810" y="1220">Aprobado</text>
+<text class="miembro" x="810" y="1236">Rechazado</text>
+<text class="miembro" x="810" y="1252">NoDisponible</text>
+<text class="miembro" x="810" y="1268">Incierto</text>
+</g>
+<g>
+<rect x="1150" y="1156" width="320" height="94" rx="6" fill="#ffffff" stroke="#b9802b" stroke-width="1.4"/>
+<path d="M1151,1202 L1151,1162 Q1151,1157 1156,1157 L1464,1157 Q1469,1157 1469,1162 L1469,1202 Z" fill="#f8ecd8"/>
+<text class="estereotipo" x="1310.0" y="1178" text-anchor="middle">«Options»</text>
+<text class="nombre" x="1310.0" y="1197" text-anchor="middle">PaymentOptions</text>
+<line x1="1150" y1="1202" x2="1470" y2="1202" stroke="#b9802b" stroke-width="1"/>
+<text class="miembro" x="1160" y="1220">+ Address : string</text>
+<text class="miembro" x="1160" y="1236">+ DeadlineSeconds : double</text>
+</g>
+<g>
+<rect x="470" y="1390" width="300" height="222" rx="6" fill="#ffffff" stroke="#7a5aa8" stroke-width="1.4"/>
+<path d="M471,1436 L471,1396 Q471,1391 476,1391 L764,1391 Q769,1391 769,1396 L769,1436 Z" fill="#eee7f7"/>
+<text class="estereotipo" x="620.0" y="1412" text-anchor="middle">«entity»</text>
+<text class="nombre" x="620.0" y="1431" text-anchor="middle">Reserva</text>
+<line x1="470" y1="1436" x2="770" y2="1436" stroke="#7a5aa8" stroke-width="1"/>
+<text class="miembro" x="480" y="1454">+ Id : Guid</text>
+<text class="miembro" x="480" y="1470">+ SolicitudId : Guid</text>
+<text class="miembro" x="480" y="1486">+ EventoId : Guid</text>
+<text class="miembro" x="480" y="1502">+ AsientoId : Guid</text>
+<text class="miembro" x="480" y="1518">+ UsuarioId : string</text>
+<text class="miembro" x="480" y="1534">+ Estado : EstadoReserva</text>
+<text class="miembro" x="480" y="1550">+ Motivo : MotivoRechazo?</text>
+<text class="miembro" x="480" y="1566">+ FechaCreacion : DateTime</text>
+<text class="miembro" x="480" y="1582">+ FechaVencimiento : DateTime?</text>
+<text class="miembro" x="480" y="1598">+ FechaActualizacion : DateTime</text>
+</g>
+<g>
+<rect x="800" y="1390" width="230" height="126" rx="6" fill="#ffffff" stroke="#7a5aa8" stroke-width="1.4"/>
+<path d="M801,1436 L801,1396 Q801,1391 806,1391 L1024,1391 Q1029,1391 1029,1396 L1029,1436 Z" fill="#eee7f7"/>
+<text class="estereotipo" x="915.0" y="1412" text-anchor="middle">«enum»</text>
+<text class="nombre" x="915.0" y="1431" text-anchor="middle">EstadoReserva</text>
+<line x1="800" y1="1436" x2="1030" y2="1436" stroke="#7a5aa8" stroke-width="1"/>
+<text class="miembro" x="810" y="1454">Retenida</text>
+<text class="miembro" x="810" y="1470">Confirmada</text>
+<text class="miembro" x="810" y="1486">Rechazada</text>
+<text class="miembro" x="810" y="1502">Vencida</text>
+</g>
+<g>
+<rect x="800" y="1540" width="230" height="110" rx="6" fill="#ffffff" stroke="#7a5aa8" stroke-width="1.4"/>
+<path d="M801,1586 L801,1546 Q801,1541 806,1541 L1024,1541 Q1029,1541 1029,1546 L1029,1586 Z" fill="#eee7f7"/>
+<text class="estereotipo" x="915.0" y="1562" text-anchor="middle">«enum»</text>
+<text class="nombre" x="915.0" y="1581" text-anchor="middle">MotivoRechazo</text>
+<line x1="800" y1="1586" x2="1030" y2="1586" stroke="#7a5aa8" stroke-width="1"/>
+<text class="miembro" x="810" y="1604">AsientoOcupado</text>
+<text class="miembro" x="810" y="1620">PagoFallido</text>
+<text class="miembro" x="810" y="1636">PagoNoDisponible</text>
+</g>
+<path d="M40,994 L326,994 L340,1008 L340,1090 L40,1090 Z" fill="#fffdf3" stroke="#b9a874" stroke-width="1.2"/>
+<path d="M326,994 L326,1008 L340,1008" fill="none" stroke="#b9a874" stroke-width="1.2"/>
+<text class="nota-titulo" x="52" y="1016">Usan BookingDbContext (atributo - db):</text>
+<text class="miembro" x="52" y="1032">· ConsultaReservas</text>
+<text class="miembro" x="52" y="1048">· VencimientoReservas</text>
+<text class="miembro" x="52" y="1064">· ProcesamientoSolicitudReserva</text>
+<text class="miembro" x="52" y="1080">· RetencionReservas</text>
+<path class="dependencia" d="M400,172 L470,172"/>
+<path class="asociacion" d="M370,300 L370,558"/>
+<path class="asociacion" d="M960,268 L960,330"/>
+<path class="dependencia" d="M1120,372 L1150,372"/>
+<path class="dependencia" d="M1470,370 L1500,370"/>
+<path class="dependencia" d="M1500,172 L1470,172"/>
+<path class="dependencia" d="M620,450 L620,558"/>
+<path class="dependencia" d="M928,450 L928,558"/>
+<path class="asociacion" d="M1120,598 L1150,598"/>
+<path class="asociacion" d="M1470,598 L1500,598"/>
+<path class="dependencia" d="M958,710 L958,756"/>
+<path class="dependencia" d="M135,694 L135,756"/>
+<path class="dependencia" d="M345,694 L345,756"/>
+<path class="dependencia" d="M1100,710 L1100,794 L1150,794"/>
+<path class="asociacion" d="M1470,794 L1500,794"/>
+<path class="asociacion" d="M1060,710 L1060,990"/>
+<path class="asociacion" d="M620,646 L620,990"/>
+<path class="asociacion" d="M440,676 L490,676 L490,990"/>
+<path class="asociacion" d="M820,710 L820,728 L750,728 L750,990"/>
+<path class="asociacion" d="M1190,558 L1190,534 L785,534 L785,1026 L770,1026"/>
+<path class="nota-enlace" d="M340,1042 L470,1042"/>
+<path class="implementa" d="M1150,1037 L1120,1037"/>
+<path class="asociacion" d="M1470,1046 L1500,1046"/>
+<path class="asociacion" d="M1310,1126 L1310,1156"/>
+<path class="dependencia" d="M910,1084 L910,1156"/>
+<path class="agregacion" d="M620,1094 L620,1390"/>
+<path class="asociacion" d="M770,1430 L800,1430"/>
+<path class="asociacion" d="M770,1595 L800,1595"/>
+<rect x="1150" y="1390" width="630" height="276" rx="8" fill="#ffffff" stroke="#c9c6bd"/>
+<text class="nombre" x="1166" y="1416">Referencias</text>
+<path class="asociacion" d="M1166,1442 L1226,1442"/>
+<text class="miembro" x="1238" y="1446">asociación: la clase guarda una referencia (atributo)</text>
+<path class="dependencia" d="M1166,1466 L1226,1466"/>
+<text class="miembro" x="1238" y="1470">dependencia: la usa como parámetro, retorno o la resuelve</text>
+<path class="implementa" d="M1166,1490 L1226,1490"/>
+<text class="miembro" x="1238" y="1494">implementa una interfaz</text>
+<path class="agregacion" d="M1166,1514 L1226,1514"/>
+<text class="miembro" x="1238" y="1518">agregación: el DbContext expone el conjunto</text>
+<text class="nota" x="1166" y="1540">- privado · + público · # protegido. Se omiten los ILogger&lt;T&gt; (Consumidor, Manejador y Procesamiento).</text>
+<text class="nota" x="1166" y="1556">ITraceContext e IAuditLogger son de Shared.Observability. Las opciones se inyectan como IOptions&lt;T&gt;.</text>
+<text class="nota" x="1166" y="1572">Program.cs y ServiceBusExtensions registran las dependencias (no se dibuja).</text>
+<text class="nota" x="1166" y="1588">Flechas omitidas, porque los tipos figuran en las firmas: ValidacionSolicitud → SolicitudReserva,</text>
+<text class="nota" x="1166" y="1604">y RetencionReservas → SolicitudReserva y Reserva.</text>
+<text class="nota" x="1166" y="1620">Referencias entre proyectos: Api → Business, Data y Domain · Business → Data y Domain · Data → Domain.</text>
+<text class="nota" x="1166" y="1636">Ninguna clase de Api usa Data: solo Program.cs, al registrar las dependencias.</text>
+<rect x="37.0" y="1337.0" width="281.6" height="22.0" rx="3" fill="#f9f6fd"/><text class="banda-titulo" x="40" y="1354">Booking.Domain · dominio anémico</text>
+<rect x="37.0" y="1359.0" width="221.1" height="17.0" rx="3" fill="#f9f6fd"/><text class="banda-sub" x="40" y="1372">Solo datos. Lo usan todas las capas.</text>
+<rect x="37.0" y="937.0" width="241.4" height="22.0" rx="3" fill="#fdf9f1"/><text class="banda-titulo" x="40" y="954">Booking.Data · acceso a datos</text>
+<rect x="37.0" y="959.0" width="330.1" height="17.0" rx="3" fill="#fdf9f1"/><text class="banda-sub" x="40" y="972">EF Core sobre PostgreSQL y cliente gRPC de Payment.</text>
+<rect x="37.0" y="505.0" width="298.1" height="22.0" rx="3" fill="#f4faf6"/><text class="banda-titulo" x="40" y="522">Booking.Business · reglas de negocio</text>
+<rect x="37.0" y="527.0" width="248.4" height="17.0" rx="3" fill="#f4faf6"/><text class="banda-sub" x="40" y="540">Usa el DbContext directo, sin repositorio.</text>
+<rect x="37.0" y="79.0" width="217.5" height="22.0" rx="3" fill="#f5f8fd"/><text class="banda-titulo" x="40" y="96">Booking.Api · presentación</text>
+<rect x="37.0" y="101.0" width="419.1" height="17.0" rx="3" fill="#f5f8fd"/><text class="banda-sub" x="40" y="114">Controller REST, consumidor del broker y servicios en segundo plano.</text>
+<rect x="408.5" y="154.0" width="52.9" height="16.0" rx="3" fill="#f5f8fd"/><text class="etiqueta" x="435.0" y="166" text-anchor="middle">devuelve</text>
+<rect x="375.0" y="310.0" width="51.0" height="16.0" rx="3" fill="#f5f8fd"/><text class="etiqueta" x="378" y="322" text-anchor="start">consulta</text>
+<rect x="625.0" y="460.0" width="98.5" height="16.0" rx="3" fill="#f5f8fd"/><text class="etiqueta" x="628" y="472" text-anchor="start">resuelve por ciclo</text>
+<rect x="933.0" y="460.0" width="117.7" height="16.0" rx="3" fill="#f5f8fd"/><text class="etiqueta" x="936" y="472" text-anchor="start">resuelve por mensaje</text>
+<rect x="1018.6" y="948.0" width="36.6" height="16.0" rx="3" fill="#fdf9f1"/><text class="etiqueta" x="1052" y="960" text-anchor="end">cobra</text>
+<rect x="627.0" y="1106.0" width="94.3" height="16.0" rx="3" fill="#fdf9f1"/><text class="etiqueta" x="630" y="1118" text-anchor="start">DbSet&lt;Reserva&gt;</text>
+</svg>
