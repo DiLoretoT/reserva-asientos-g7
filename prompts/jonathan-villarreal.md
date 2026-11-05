@@ -252,3 +252,37 @@ Actualizá `docs/booking-servicebus.md`: sacá la pausa provisional y agregá el
 **Al finalizar:**
 
 Compilá toda la solución con 0 errores y 0 advertencias, revisá el diff y comprobá que no haya credenciales ni cambios fuera de Booking y su documentación. Registrá este prompt en mi historial. No hagas commit, push ni PR. Entregame un resumen de lo implementado, lo verificado y lo pendiente.
+
+2026-11-04 al 2026-11-05 — Diagrama de clases de Booking (issue #21)
+
+Versión condensada de los prompts que utilicé con Claude. Las revisiones surgieron de observaciones de compañeros, que analicé y discutí antes de aplicarlas.
+
+Primera versión
+
+Armá un SVG con el diagrama de clases de Booking, a partir del código actual de dev. Mantenelo simple, pero que incluya todas las clases importantes, ordenadas en sus cuatro capas: Api, Business, Data y Domain. Seguí el estilo del diagrama de Payment. No modifiques ningún otro archivo.
+
+Revisión 1
+
+Ajustá el diagrama con estas correcciones:
+
+Que sea solo de clases: sacá los sistemas externos y el texto de lógica de negocio dentro de las cajas.
+
+Cada caja con estereotipo, atributos y métodos públicos.
+
+Diferenciá asociación, dependencia, implementación y agregación.
+
+La leyenda no puede decir que cada capa usa solo la inferior: mostrá las referencias reales entre proyectos.
+
+Revisión 2
+
+Aplicá estas correcciones surgidas de la revisión de un compañero, verificando cada una contra el código:
+
+Aclarar en la leyenda qué se omite: los ILogger<T> y las flechas hacia tipos que ya aparecen en las firmas.
+
+Indicar que ITraceContext e IAuditLogger pertenecen a Shared.Observability.
+
+Corregir quién registra las dependencias: Program.cs y ServiceBusExtensions.
+
+Dibujar una asociación separada por cada clase que utiliza BookingDbContext.
+
+Incorporar la dependencia de ReservasController hacia IAuditLogger, agregada en el PR #105.
