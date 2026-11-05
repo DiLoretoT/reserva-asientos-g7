@@ -48,3 +48,41 @@ Día cerrado del mensaje del broker y del cobro.
 - Tomás hizo el consumer de Booking (PR #94) y el cobro gRPC con Payment idempotente (PRs #95 y #83): todo mergeado en dev. Mi publicador (PR #93) ya tiene el approve de Tomás: falta el merge y la actualización de la descripción.
 - El rebase de mi rama sobre dev con los PRs de auditoria salió con un solo conflicto en los using, se resolvió conservando todo.
 - Sugerencia de Tomás que adopté: el SDK de Service Bus trae reintentos largos por defecto y encima tenía mi bucle de 3 intentos, así que la página podía esperar minutos con el broker caído; con ReintentarEnvio reenviando en segundo plano ya no hace falta, corté mi bucle a un intento y puse ReintentarEnvio cada 15 s (página responde al instante y el segundo procesado en segundo plano); ajusté el cliente con esas opciones en el PR #93.
+## 2026-11-04
+
+Revisión final del ciclo del broker y preparación del cierre.
+
+- Tomás re-aprobó el #93 con el ajuste de reintentos y lo mergeó a dev: el
+  publicador quedó dentro del flujo completo del grupo.
+- Revisé el estado de todos los PRs del equipo: el consumidor de Booking es
+  de Jonathan (#94), el cobro por gRPC también de Jonathan (#95) y la
+  idempotencia por BookingId de Payment es de Axel (#83); todos mergeados.
+- Encontré tres pendientes documentales y los preparé (pendientes de
+  publicar): la sección del broker para el documento de decisiones (#59), la
+  fila del broker en la tabla de componentes de arquitectura, y la sección de
+  Service Bus para las instrucciones de levantamiento (#38). Jonathan ya
+  documentó las pruebas con Azure de su consumidor en
+  docs/booking-servicebus.md.
+- Detecté una diferencia entre el contrato REST y el código: el contrato dice
+  que si Payment no responde la reserva termina rechazada con
+  pago_no_disponible, y el código deja la reserva pendiente con el mensaje sin
+  completar y en espera de reentrega. Lo dejé anotado para decidir con las
+  parejas antes de la defensa.
+- Preparé el guion de la prueba contra Azure real para estos días: recorrido
+  exitoso, Payment apagado y duplicado, cada una con su suscripción propia y
+  la limpieza de los mensajes de prueba.
+
+## 2026-11-05
+
+Armé el entorno local completo (contenedores, Booking, Payment y
+Availability) y corrí una reserva de punta a punta.
+
+- El cobro falló: Payment no había creado su base SQLite y respondió al gRPC
+  con un error interno (Unknown). Booking manejó el caso bien: el mensaje
+  quedó sin completar, se reintentó y la reserva terminó `vencida` a los 5
+  minutos (verificado en la base de testing de Booking).
+- Verifiqué el diff del #107 de Tomás y le pedí al agente mergearlo: el
+  script levanta todo en una PC y Payment ahora crea su base al arrancar, así
+  que esta falla desaparece en la próxima corrida.
+- Pendientes: re-corrida del recorrido exitoso con el script, y las pruebas
+  con Payment apagado y el duplicado.
