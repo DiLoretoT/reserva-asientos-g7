@@ -159,6 +159,12 @@ AI-assisted
 
 Cada integrante guarda en `prompts/nombre-apellido.md` el historial de instrucciones que le dio a la IA.
 
+## Service Bus con Azure (Availability y Booking)
+
+- **Availability:** `dotnet user-secrets set "ServiceBus:ConnectionString" "<la conexión que entrega el responsable del broker>" --project src/Availability/Availability.Web` y, si se quiere cambiar el tópico, `"ServiceBus:TopicName"` con valor `grupo7-booking-topic`. Sin la connection string, el publicador simulado atiende el sitio y todo funciona igual, salvo que no sale nada por Azure.
+- **Booking:** en `src/Booking/Booking.Api`, `ServiceBus:Enabled` en `true`, `ServiceBus:ConnectionString` y `ServiceBus:SubscriptionName`. La suscripción es obligatoria cuando el consumidor está activado: cada máquina que corre Booking usa la suya (`booking-<nombre>`) y una sola, la de la demo, usa `booking`. El tópico toma `grupo7-booking-topic` por defecto.
+- **Advertencia:** si se configura solo Availability, los mensajes reales van al tópico y quedan sin leer (Booking con el consumidor desactivado no los toma). Si se configura solo Booking, no llega nada, porque el publicador de Availability sigue en modo simulado. La conexión la aporta el responsable del broker y se pasa por privado.
+
 ## Secretos
 
 El connection string del broker y cualquier otra clave no se suben al repositorio. Cada uno los guarda en su máquina, fuera de los archivos versionados.
