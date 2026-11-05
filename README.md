@@ -18,6 +18,17 @@ prompts/            historial de prompts de cada integrante
 
 `ReservaAsientos.slnx` agrupa todos los proyectos para compilarlos juntos. Cada servicio corre como un proceso independiente. Availability publica las solicitudes de reserva en un broker de mensajes (Azure Service Bus), que se las entrega a Booking. Booking llama a Payment por gRPC, y Availability consulta a Booking por REST.
 
+## Documentación
+
+- [Arquitectura](docs/Documentacion/arquitectura.md): diagrama general, tabla de interpretación, estados de una reserva y consistencia eventual
+- [Decisiones de diseño](docs/Documentacion/decisiones.md)
+- [Comunicación entre servicios](docs/Documentacion/comunicacions.md)
+- Cada microservicio: [Availability](docs/Microservicios/Availability.md), [Booking](docs/Microservicios/Booking.md) y [Payment](docs/Microservicios/Payment.md)
+- [Autorización con Keycloak](docs/autorizacion.md)
+- [Diagramas](docs/diagramas/)
+- [Contratos entre servicios](contracts/)
+- [Prompts de cada integrante](prompts/)
+
 ## Booking: desarrollo local
 
 Con Docker Desktop iniciado, ejecutar desde la raíz `docker compose up -d --wait booking-db`.
