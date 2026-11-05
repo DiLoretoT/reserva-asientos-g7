@@ -31,7 +31,7 @@ Estas instrucciones levantan Keycloak, Seq, la base de Booking y los tres servic
 
 ### Con el script
 
-Desde la raíz del repo, ejecutar:
+Desde la raíz del repo, en una terminal de PowerShell, ejecutar:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start_project.ps1
