@@ -17,7 +17,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	<Protobuf Include="Protos\payment.proto" GrpcServices="Server" />
+	<Protobuf Include="Protos\Payment.proto" GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>

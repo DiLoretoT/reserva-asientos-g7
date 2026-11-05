@@ -18,6 +18,97 @@ prompts/            historial de prompts de cada integrante
 
 `ReservaAsientos.slnx` agrupa todos los proyectos para compilarlos juntos. Cada servicio corre como un proceso independiente. Availability publica las solicitudes de reserva en un broker de mensajes (Azure Service Bus), que se las entrega a Booking. Booking llama a Payment por gRPC, y Availability consulta a Booking por REST.
 
+## Cómo levantar el proyecto
+
+Estas instrucciones levantan Keycloak, Seq, la base de Booking y los tres servicios en una PC con Windows. El script `start_project.ps1` ejecuta todos los pasos y comprueba los requisitos. La sección "Paso a paso sin el script" reúne los comandos para correrlos a mano.
+
+### Requisitos
+
+- Hay que tener instalado el SDK de .NET 10 y Docker Desktop iniciado.
+- Hay que clonar el repo, que abre en la rama `dev`, y ejecutar todos los comandos desde su raíz.
+- Hay que tener el connection string de Azure Service Bus del Grupo 7, que el docente entrega a cada grupo. Sin ese valor, Availability usa el publicador simulado y las solicitudes no llegan a Booking.
+- Tienen que estar libres los puertos 5043, 5127 y 7113 de los servicios, 8080 de Keycloak, 8081 y 5341 de Seq, y 5433 de la base de Booking.
+
+### Con el script
+
+Desde la raíz del repo, en una terminal de PowerShell, ejecutar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_project.ps1
+```
+
+La opción `-ExecutionPolicy Bypass` vale solo para esta ejecución y no cambia la configuración de la PC.
+
+El script hace lo siguiente, en este orden:
+
+1. Comprueba los requisitos y que los puertos de los servicios estén libres.
+2. Crea `.env` y `src/Auth/keycloak/.env` con valores generados. Si esos archivos ya existen, no los modifica.
+3. Levanta los contenedores. La primera vez, Keycloak puede tardar varios minutos en responder, y el script lo espera hasta 10 minutos.
+4. Compila la solución.
+5. Carga los User Secrets. Si Booking no tiene un connection string guardado, el script lo pide por consola. Con Enter y sin valor, sigue sin broker.
+6. Abre una ventana para cada servicio.
+
+Para apagar los servicios, se cierran sus ventanas. Los contenedores se apagan con `docker compose -f src/Auth/keycloak/docker-compose.yml stop` y `docker compose stop`.
+
+### Paso a paso sin el script
+
+1. Copiar `.env.example` a `.env` y completar `SEQ_ADMIN_PASSWORD`.
+2. Copiar `src/Auth/keycloak/.env.example` a `src/Auth/keycloak/.env` y completar `AVAILABILITY_WEB_CLIENT_SECRET` y `BOOKING_API_CLIENT_SECRET` con valores propios. Cada valor se puede generar en PowerShell con `[guid]::NewGuid().ToString("N")`. `GITHUB_CLIENT_ID` y `GITHUB_CLIENT_SECRET` solo hacen falta para iniciar sesión con GitHub, como explica [la guía de autorización](docs/autorizacion.md).
+3. Levantar los contenedores:
+
+   ```powershell
+   docker compose -f src/Auth/keycloak/docker-compose.yml up -d
+   docker compose up -d --wait
+   ```
+
+   Antes de seguir, hay que esperar a que `http://localhost:8080/realms/reserva-asientos` responda en el navegador. La primera vez puede tardar varios minutos.
+
+4. Compilar la solución y crear el certificado HTTPS de desarrollo, si la PC no lo tiene:
+
+   ```powershell
+   dotnet build ReservaAsientos.slnx
+   dotnet dev-certs https
+   ```
+
+5. Cargar los User Secrets con `AVAILABILITY_WEB_CLIENT_SECRET` y `BOOKING_API_CLIENT_SECRET` del `.env` de Keycloak, y con el connection string de Service Bus:
+
+   ```powershell
+   dotnet user-secrets set "Keycloak:ClientSecret" "<AVAILABILITY_WEB_CLIENT_SECRET>" --project src/Availability/Availability.Web
+   dotnet user-secrets set "ServiceBus:ConnectionString" "<connection string>" --project src/Availability/Availability.Web
+   dotnet user-secrets set "Keycloak:ClientSecret" "<BOOKING_API_CLIENT_SECRET>" --project src/Booking/Booking.Api
+   dotnet user-secrets set "ServiceBus:ConnectionString" "<connection string>" --project src/Booking/Booking.Api
+   dotnet user-secrets set "ServiceBus:Enabled" "true" --project src/Booking/Booking.Api
+   dotnet user-secrets set "ServiceBus:SubscriptionName" "booking" --project src/Booking/Booking.Api
+   ```
+
+6. Abrir una terminal por servicio en la raíz del repo y ejecutar un comando en cada una:
+
+   ```powershell
+   dotnet run --no-build --project src/Payment/Payment.Grpc --launch-profile http
+   dotnet run --no-build --project src/Booking/Booking.Api --launch-profile http
+   dotnet run --no-build --project src/Availability/Availability.Web --launch-profile https
+   ```
+
+### Dónde queda cada servicio
+
+| Servicio | Dirección |
+|---|---|
+| Sitio de Availability | `https://localhost:7113` |
+| Booking | `http://localhost:5127` |
+| Payment | `http://localhost:5043` |
+| Keycloak | `http://localhost:8080` |
+| Seq | `http://localhost:8081`, con el usuario `admin` y la contraseña que figura en `SEQ_ADMIN_PASSWORD` del `.env` de la raíz |
+
+El usuario de prueba del sitio es `usuario1`, con la contraseña `usuario1`. Si el navegador avisa que no confía en el certificado de desarrollo, se puede continuar igual o confiar en él con `dotnet dev-certs https --trust`.
+
+### Cómo comprobar que funciona
+
+Para probar el recorrido exitoso, se inicia sesión, se reserva un asiento libre y se toca "Ver el estado". La solicitud queda en "Confirmada".
+
+Para probar una falla de pagos, se cierra la ventana de Payment y se reserva otro asiento libre. Esa solicitud queda en "Rechazada", con el mensaje "El servicio de pagos no respondió y no se pudo cobrar."
+
+Si hay más de una copia de Booking con el mismo `ServiceBus:SubscriptionName`, cada mensaje le llega a una sola de ellas. Por eso, durante estas pruebas tiene que correr una sola copia de Booking.
+
 ## Booking: desarrollo local
 
 Con Docker Desktop iniciado, ejecutar desde la raíz `docker compose up -d --wait booking-db`.
