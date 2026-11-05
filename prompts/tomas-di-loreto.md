@@ -210,3 +210,11 @@ Lo había aprobado y me faltó mergear, ahora sí
 Ayer nos juntamos con el equipo a probar toda la integración y surgió un error con keycloak apagado. Cuando un usuario sin sesión intenta reservar, Availability muestra la página de excepción, porque en /Cuenta/IniciarSesion salta un HttpRequestException contra localhost:8080 que nadie ataja. Con Booking y con el broker caídos el sitio responde sin romperse, y quiero lo mismo acá.
 Si Keycloak no responde, quiero que el usuario vea una página que diga que no pudimos iniciar sesión, con un enlace para volver a los eventos, y que el error quede en el log. Fijate también si cerrar sesión tiene el mismo problema y resolvelo igual. No toques Keycloak ni los otros servicios.
 Pasame qué cambiar y lo hago yo en el repo.
+
+## 2026-11-05 10:21
+
+Volviendo al tema de la entrega, nos queda el armado del script y complemento al README que explique exactamente cómo levantar el proyecto completo. Veamos cómo sería, fíjate el estado de Git. Quiero que me propongas cómo hacer el script para levantar todo el proyecto, sé cómo funcionan los scripts de powershell en alto nivel pero no estoy en condiciones de escribir todo el script y hay poco tiempo.
+
+## 2026-11-05 16:20
+
+Lo que quiero que hagamos ahora, es que con las pruebas que hiciste me ayudes a hacer el script sección por sección en vs code. Me das el código y yo lo escribo en el repo. Explicame cada sección y vamos avanzando paso a paso. Luego para validar el funcionamiento lo corro en mi notebook laboral para probar que todo funcione. 
