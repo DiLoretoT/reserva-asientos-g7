@@ -43,11 +43,11 @@ Resultado: review del PR #85 publicada, PR #86 (configuración del broker) en bo
 
 Día cerrado del mensaje del broker y del cobro.
 
-- Me habia quedado con la version final del contrato y la mando a un PR propio, pero Jonathan adelanto el suyo (PR #85) y me puse a revisarlo desde el lado Broker, y al final ese quedo mergeado: descarté mi rama docs/contrato-mensaje-broker.
-- Corri dos pruebas descartables contra el namespace real (la sonda y la prueba de punta a punta del publicador). Aprendi leyendo la entidad: MaxDeliveryCount real es 10 (mi objetivo era 3) y se dejó así; lo anoté en el PR #86 de configuración, que quedó mergeado.
+- Me había quedado con la versión final del contrato y la mandaba a un PR propio, pero Jonathan adelantó el suyo (PR #85) y me puse a revisarlo desde el lado Broker, y al final ese quedó mergeado: descarté mi rama docs/contrato-mensaje-broker.
+- Corrí dos pruebas descartables contra el namespace real (la sonda y la prueba de punta a punta del publicador). Aprendí leyendo la entidad: MaxDeliveryCount real es 10 (mi objetivo era 3) y se dejó así; lo anoté en el PR #86 de configuración, que quedó mergeado.
 - Tomás hizo el consumer de Booking (PR #94) y el cobro gRPC con Payment idempotente (PRs #95 y #83): todo mergeado en dev. Mi publicador (PR #93) ya tiene el approve de Tomás: falta el merge y la actualización de la descripción.
 - El rebase de mi rama sobre dev con los PRs de auditoria salió con un solo conflicto en los using, se resolvió conservando todo.
-- Sugerencia de Tomás que adopté: el SDK de Service Bus trae reintentos largos por defecto y encima tenía mi bucle de 3 intentos, así que la página podía esperar minutos con el broker caído; con ReintentarEnvio reenviando en segundo plano ya no hace falta, corté mi bucle a un intento y puse ReintentarEnvio cada 15 s (página responde al instante y el segundo procesado en segundo plano); ajusté el cliente con esas opciones en el PR #93.
+- Sugerencia de Tomás que adopté: el SDK de Service Bus trae reintentos largos por defecto y encima tenía mi bucle de 3 intentos, así que la página podía esperar minutos con el broker caído; con ReintentarEnvio reenviando en segundo plano ya no hace falta, corté mi bucle a un intento y dejé ReintentarEnvio cada 15 s (página responde al instante y el reenvío queda en segundo plano); ajusté el cliente con esas opciones en el PR #93.
 ## 2026-11-04
 
 Revisión final del ciclo del broker y preparación del cierre.
