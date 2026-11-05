@@ -28,10 +28,12 @@ El anillo 2 define las interfaces que necesita, y las clases de `Availability.Ga
 Booking REST API y Payment gRPC API deben seguir una arquitectura N-Layer. La separación en capas permite organizar responsabilidades y reducir el acoplamiento entre la entrada de la aplicación, la lógica de aplicación y la infraestructura.
 
 **En Booking, la estructura es:**
-- 
-- 
-- 
-- 
+- `Booking.Api`: exposición de la API REST (los dos endpoints que consulta Availability), consumidor del broker y proceso en segundo plano del vencimiento.
+- `Booking.Business`: reglas de la reserva (retener o rechazar, procesar el cobro, consultar y vencer reservas). Usa el `DbContext` directo, sin otra capa de repositorios encima.
+- `Booking.Data`: `BookingDbContext` con EF Core y PostgreSQL, migraciones y el cliente gRPC hacia Payment.
+- `Booking.Domain`: la entidad `Reserva` y sus enums de estado y motivo de rechazo. Es anémica, sin reglas.
+
+Las capas se llaman en este sentido: `Api` → `Business` → `Data` → `Domain`. `Api` también registra `Data` al arrancar (el `DbContext` y el cliente de Payment), pero las reglas pasan siempre por `Business`. Las reglas de integridad que importan, como no tener dos reservas activas del mismo asiento, las hace cumplir la base de datos con índices y restricciones únicas, porque las réplicas de Booking solo comparten la base. El detalle de cada archivo está en [`../Microservicios/Booking.md`](../Microservicios/Booking.md).
 
 En Payment, la estructura es:
 - `Payment.API`: exposición del servicio gRPC.
@@ -59,7 +61,7 @@ Booking debe comunicarse con Payment mediante gRPC para solicitar el procesamien
 
 gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los servicios y mensajes. Esto permite que ambos componentes compartan una definición explícita de la operación.
 
-**Contrato del proyecto:** `Payment/Payment.API/Protos/payment.proto`.
+**Contrato del proyecto:** `src/Payment/Payment.Grpc/Protos/Payment.proto`. Booking lo usa desde `Booking.Data/Payment` (`ClientePayment`), con un plazo máximo por llamada y su token de servicio.
 
 ## 7. Persistencia y SQLite
 
@@ -68,7 +70,7 @@ gRPC utiliza contratos definidos mediante archivos `.proto`, que describen los s
 | Servicio     | Motor     | Ubicación                                               |
 |--------------|-----------|---------------------------------------------------------|
 | Availability | SQLite    |`Availability/Availability.Gateways/DependencyInjection.cs`|
-| Booking      | Completar | Completar                                               |
+| Booking      | PostgreSQL 17 | `Booking/Booking.Api/Program.cs` y `Booking/Booking.Data/BookingDbContext.cs` |
 | Payment      | SQLite    |`Payment/Payment.Data/Persintence/DependencyInjection.cs`|
 
 ## 8. Auditoría
@@ -77,7 +79,7 @@ Se agregan logs de auditoría para identificar el inicio y el fin de una cadena 
 
 **Documentar el formato, destino y campos de los registros reales.**
 
-Availability escribe logs estructurados con Serilog, por medio de `Shared.Observability`, en la consola y en Seq. Los campos y las operaciones están en [`contracts/logs.md`](../../contracts/logs.md).
+Availability y Booking escriben logs estructurados con Serilog, por medio de `Shared.Observability`, en la consola y en Seq. Los campos y las operaciones están en [`contracts/logs.md`](../../contracts/logs.md).
 
 
 ## 9. Autenticación entre microservicios
