@@ -51,7 +51,7 @@ El enunciado requiere que este servicio siga Clean Architecture y utilice un dom
 
 Consume los mensajes publicados por Availability. Verifica si el asiento está libre y, si lo está, crea una reserva retenida. Si el asiento ya está ocupado, rechaza la solicitud. Luego coordina el cobro con Payment y actualiza el estado de la reserva según el resultado.
 
-El enunciado requiere una REST API, arquitectura N-Layer y dominio anémico.El enunciado requiere una API gRPC, arquitectura N-Layer y dominio anémico. La estructura concreta de capas se describe en `../docs/diagrams/Booking.md`.
+El enunciado requiere una REST API, arquitectura N-Layer y dominio anémico. La estructura concreta de capas se describe en [`../Microservicios/Booking.md`](../Microservicios/Booking.md).
 
 ### Payment
 

@@ -10,7 +10,7 @@
 |Availability|  Broker       |Publicación de mensaje| Enviar la solicitud de reserva a Booking                      |
 | Broker     |  Booking      | Consumo de mensaje   | Entregar la solicitud para su procesamiento                   |
 | Booking    |  Payment      | gRPC                 | Procesar el pago de una reserva retenida                      |
-| Booking    | Authorization | Según implementación | Autenticación entre microservicios                            |
+| Booking    | Authorization | client credentials   | Obtener el token de servicio para llamar a Payment            |
 | Payment    | Authorization | Jwt                  | Autenticación entre microservicios                            |
 |Availability|  Booking      | HTTP / REST          | Consultar el resultado de una solicitud                       |
 | Booking    | Notifications | Según implementación | Disparar la notificación de confirmación                      |
@@ -38,7 +38,8 @@ El mensaje completo, con sus propiedades de Service Bus y sus validaciones, est�
 | Availability | GET       | `/Eventos/Asientos/{id}` | Consultar asientos disponibles |
 | Availability | POST      | `/Reservas/Solicitar` | Enviar solicitud de reserva |
 | Availability | GET       | `/solicitudes/{id}` | Consultar resultado de solicitud |
-| Booking      | Completar | Completar | Operación REST implementada, si corresponde |
+| Booking      | GET       | `/api/eventos/{eventoId}/asientos-ocupados` | Informar los asientos ocupados de un evento |
+| Booking      | GET       | `/api/solicitudes/{solicitudId}` | Informar el estado de una solicitud (404 si todavía no la procesó) |
 
 Las rutas de Availability son páginas del sitio MVC, no una API REST. Las llamadas de Availability a Booking están definidas en [`contracts/availability-booking.md`](../../contracts/availability-booking.md).
 
@@ -49,10 +50,10 @@ El contrato gRPC está definido por el archivo: Payment/Payment.API/Protos/payme
 | Elemento                    | Definición                    |
 | --------------------------- | ------------------------------|
 | Servicio gRPC               | "Payment.Grpc"                |
-| Método invocado por Booking | Completar                     |
+| Método invocado por Booking | `ProcessPayment`              |
 | Mensaje de solicitud        | `ProcessPaymentRequest`       |
 | Mensaje de respuesta        | `ProcessPaymentResult`        |
-| Dirección / puerto          | Completar según configuración |
+| Dirección / puerto          | `Payment:Address` de Booking, `http://localhost:5043` en desarrollo |
 
 ### Secuencia esperada
 
@@ -83,6 +84,10 @@ Availability no expone ni consume gRPC, y sus páginas no aceptan tokens de otro
 
 Si Keycloak o Booking no responden, o si Booking rechaza el token, `ClienteBooking` no propaga el error. El mapa de asientos se muestra con un aviso y los asientos sin estado, y el seguimiento muestra el estado como desconocido.
 
+### Autenticación en Booking
+
+Booking valida los tokens de Keycloak con `Shared.Auth` (`AddValidacionKeycloak`, con la audiencia `booking-api`), y `[Authorize]` protege sus dos endpoints. Sin token, con un token vencido o con uno de otra audiencia responde 401. Para llamar a Payment por gRPC, `AddTokenDeServicio("payment-api")` pide a Keycloak un token con client credentials, con el client `booking-api`, y lo agrega a los metadatos de cada llamada. Si Booking no puede obtener ese token, el pago queda como "no disponible" y la solicitud no crea un cobro. El consumidor del broker no usa token: se autentica con la conexión de Service Bus.
+
 ## 6. Auditoría y trazabilidad
 
 Documentar los campos efectivamente registrados. Como mínimo, verificar si los logs incluyen:
@@ -101,6 +106,10 @@ El identificador de correlación permite relacionar registros de Availability, B
 Cada log de auditoría de Availability incluye `Timestamp`, `Level`, `TraceId`, `Servicio` con el valor `availability` y `Operacion`. Las líneas de fin agregan `Resultado`, y `Motivo` cuando corresponde. Las operaciones y sus resultados están en [`contracts/logs.md`](../../contracts/logs.md).
 
 En la solicitud de reserva, el reintento de envío y el seguimiento, el `TraceId` es el `solicitudId`. Las peticiones a Booking llevan el `TraceId` en el encabezado `X-Trace-Id`, que agrega `TraceIdHttpClientHandler` de `Shared.Observability`.
+
+### Auditoría en Booking
+
+Booking usa `Shared.Observability` y escribe en la consola y en Seq con `Servicio` igual a `booking`. Registra el inicio y el fin de `procesar_reserva`, `consultar_asientos_ocupados` y `consultar_solicitud`, también cuando fallan, con `Resultado` y `Motivo` en la línea de fin. En `procesar_reserva` el `TraceId` es el `solicitudId` del mensaje, y en los endpoints es el `X-Trace-Id` del pedido, que manda Availability, o un Guid nuevo si no viene. Las operaciones y sus resultados están en [`contracts/logs.md`](../../contracts/logs.md).
 
 ## 8. Consistencia eventual
 

@@ -66,7 +66,7 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 | Servicio | Operaciones auditadas |
 |---|---|
 | Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `reintentar_envio`, `consultar_solicitud` (detalle abajo) |
-| Booking | A definir |
+| Booking | `procesar_reserva`, `consultar_asientos_ocupados`, `consultar_solicitud` (detalle abajo) |
 | Payment | A definir |
 
 ### Availability
@@ -82,3 +82,13 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 El `Motivo` se registra como propiedad aparte en la línea de fin. `reintentar_envio` la ejecuta un proceso en segundo plano de Availability cada 15 segundos, sobre las solicitudes que quedaron pendientes de envío porque el broker no respondió (patrón Outbox). En cada vuelta reenvía las pendientes registradas hace más de 90 segundos, de la más vieja a la más nueva, y se detiene en la primera que el broker no confirma. Cada intento registra su propio `reintentar_envio`. Reenvía el mensaje con el mismo `solicitudId`, que es el `MessageId` del contrato del broker. Usa ese `solicitudId` como `TraceId`, así el reenvío queda en la misma cadena de sucesos que el `solicitar_reserva` que creó la solicitud.
 
 Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availability.Gateways` llama a `IAuditLogger`, porque `Shared.Observability` depende de ASP.NET Core y los casos de uso no pueden referenciarlo sin romper Clean Architecture.
+
+### Booking
+
+| `Operacion` | `TraceId` | `Resultado` y `Motivo` |
+|---|---|---|
+| `procesar_reserva` | El `solicitudId` del mensaje del broker; si el mensaje es inválido y no trae uno, un Guid nuevo | `ok` · `rechazada` con `asiento_ocupado`, `pago_fallido`, `pago_no_disponible` o el motivo de DLQ (`campo_invalido`, etc.) · `error` con `fallo_transitorio`, `fallo_procesamiento` o `excepcion`. Agrega la propiedad `Duplicado` |
+| `consultar_asientos_ocupados` | El `X-Trace-Id` del pedido, o un Guid nuevo si no viene | `ok` · `error` (`excepcion`) |
+| `consultar_solicitud` | El `X-Trace-Id` del pedido (Availability manda el `solicitudId`), o un Guid nuevo si no viene | `ok` · `rechazada` con `solicitud_inexistente` (Booking todavía no la procesó, es el 404) · `error` (`excepcion`) |
+
+Un 401 por token inválido lo resuelve el middleware de autenticación antes del controller y no genera auditoría de Booking. El vencimiento automático de reservas no se audita: no nace de una solicitud ni de un pedido y corre cada pocos segundos casi siempre sin hacer nada.
