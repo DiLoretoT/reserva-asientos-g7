@@ -1,73 +1,110 @@
 # Contrato de logs y traza
 
-Módulo: Broker, Logs e Integración · Issue #37
-Responsable: Gianluca · Revisa: Facundo
+**Módulo:** Broker, Logs e Integración · Issue #37  
+**Responsable:** Gianluca · **Revisa:** Facundo
 
-Este contrato lo cumplen Availability, Booking y Payment. Lo implementa `Shared.Observability`.
+Este documento describe los criterios de trazabilidad y logging de los servicios Availability, Booking y Payment. La infraestructura compartida de observabilidad se encuentra en `Shared.Observability`.
 
-## 1. Trace ID
+## Componentes compartidos: Shared.Observability
 
-- El `TraceId` es el `solicitudId` de la solicitud de reserva. Es un `Guid`.
-- No existe un identificador de traza aparte en el mensaje del broker.
-- Si una operación no nace de una solicitud (por ejemplo `GET /api/eventos/{id}/asientos-ocupados`), el servicio genera un `Guid` nuevo por request.
-- Si el request ya trae el header, se respeta ese valor; si no, se genera uno.
+El proyecto `Shared.Observability` centraliza los componentes utilizados por los servicios para implementar la observabilidad y la trazabilidad.
+
+Incluye:
+
+- `ITraceContext` y `TraceContext`: permiten mantener el `TraceId` durante el procesamiento de una operación.
+- `TraceIdEnricher`: incorpora el `TraceId` como propiedad de los eventos de log cuando está disponible.
+- `IAuditLogger` y `AuditLogger`: permiten registrar eventos de inicio y fin de operaciones.
+- Middlewares HTTP: establecen el contexto de trazabilidad a partir del header `X-Trace-Id`.
+- Interceptores gRPC: permiten transmitir y recuperar el `TraceId` mediante metadata.
+- `ObservabilityExtensions`: centraliza el registro de dependencias y la configuración de Serilog y Seq.
+
+## 1. TraceId
+
+El `TraceId` permite relacionar los logs correspondientes a una misma solicitud u operación.
+
+- Para una solicitud de reserva, el `TraceId` corresponde al `solicitudId`, que es un `Guid`.
+- No existe un identificador de traza separado en el mensaje del broker.
+- Para operaciones que no nacen de una solicitud de reserva, se genera un `Guid` nuevo por request.
+- Si un request REST recibe un header `X-Trace-Id` válido, se conserva ese valor. Si no lo recibe, se genera uno nuevo.
 
 | Canal | Dónde viaja |
 |---|---|
 | REST | Header `X-Trace-Id` |
-| gRPC | Metadata `x-trace-id` (en minúscula, lo exige gRPC) |
+| gRPC | Metadata `x-trace-id` |
 | Broker | El `solicitudId` del mensaje |
 
-## 2. Campos obligatorios de cada línea de log
+## 2. Logging y envío a Seq
 
-Los logs son estructurados (Serilog) y se envían a Seq.
+Los servicios utilizan Serilog para generar logs estructurados y enviarlos a Seq.
+
+Se incorporan las siguientes propiedades:
 
 | Campo | Descripción |
 |---|---|
-| `Timestamp` | Fecha y hora en UTC (lo agrega Serilog) |
-| `Level` | Nivel del log |
-| `TraceId` | El identificador de la sección 1 |
-| `Servicio` | `availability`, `booking` o `payment` |
-| `Operacion` | Nombre de la operación en snake_case (ej. `solicitar_reserva`, `procesar_reserva`, `cobrar`) |
-| `Resultado` | Presente en los logs de fin y en errores (valores en la sección 4) |
+| `Timestamp` | Fecha y hora del evento. |
+| `Level` | Nivel del log. |
+| `Servicio` | Identifica al servicio que genera el evento: `availability`, `booking` o `payment`. |
+| `TraceId` | Identificador de la traza, cuando existe un contexto de trazabilidad disponible. |
 
-## 3. Auditoría: inicio y fin
+El `TraceId` se agrega a los eventos mediante `TraceIdEnricher`. Si no hay un TraceId establecido en el contexto, la propiedad no se agrega.
 
-Cada operación relevante genera dos eventos con el mismo `TraceId` y la misma `Operacion`:
+La propiedad `Servicio` permite distinguir en Seq de qué servicio proviene cada evento.
 
-- `[Inicio Operación]`: al comenzar.
-- `[Fin Operación]`: al terminar, con el `Resultado`. Se registra también cuando la operación falla.
+## 3. Propagación del TraceId en Booking y Payment
 
-Se auditan, como mínimo, las operaciones que hacen avanzar una reserva en cada servicio.
+La implementación de observabilidad contempla los siguientes mecanismos:
 
-## 4. Valores de `Resultado` (propuesta)
+### Booking
 
-`ok`, `rechazada`, `error`.
+- `UseTraceId`: middleware que obtiene el `TraceId` del header `X-Trace-Id` o genera uno nuevo.
+- `ITraceContext`: mantiene el identificador disponible durante el procesamiento de la operación.
+- `TraceIdGrpcClientInterceptor`: agrega el `TraceId` a la metadata de las llamadas gRPC dirigidas a Payment.
 
-El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, `pago_fallido`, `pago_no_disponible`.
+### Payment
 
-## 5. Niveles
+- `UseTraceId`: middleware que establece el contexto de trazabilidad para los requests HTTP.
+- `TraceIdGrpcInterceptor`: recupera el `TraceId` recibido mediante metadata gRPC. Si no recibe uno válido, genera uno nuevo.
+- `ITraceContext`: mantiene el identificador disponible durante el procesamiento de la llamada.
+
+De esta manera, Booking puede transmitir el identificador de una operación a Payment mediante gRPC, permitiendo relacionar los eventos generados por ambos servicios.
+
+## 4. Auditoría de operaciones
+
+Se dispone de la interfaz `IAuditLogger` y su implementación `AuditLogger` dentro de `Shared.Observability`.
+
+Esta implementación ofrece métodos para registrar:
+
+- `[Inicio Operación]`: inicio de una operación.
+- `[Fin Operación]`: finalización de una operación.
+
+La existencia de esta herramienta no implica que todas las operaciones de los servicios estén instrumentadas con eventos de inicio y fin.
+
+Por el momento, no se establece como obligatorio que todos los logs tengan las propiedades `Operacion` y `Resultado`, ya que no se implementó una estandarización de esos campos en todos los servicios.
+
+## 5. Niveles de log
 
 | Nivel | Uso |
 |---|---|
-| Debug | Detalle de desarrollo. No se envía en producción |
-| Information | Inicio y fin de operaciones, hitos normales |
-| Warning | Situaciones anómalas que se controlan (reintentos, circuito abierto) |
-| Error | Fallas no esperadas, con la excepción |
+| Debug | Información detallada para desarrollo. |
+| Information | Eventos informativos y funcionamiento normal. |
+| Warning | Situaciones anómalas que pueden controlarse. |
+| Error | Errores y fallas durante el procesamiento. |
+
+La configuración de Serilog establece el nivel mínimo `Information`.
 
 ## 6. Qué NO se loguea
 
-- Cuerpos de mensajes, requests ni responses (pueden contener datos personales).
+- Cuerpos completos de mensajes, requests ni responses que puedan contener datos personales.
 - Cadenas de conexión, tokens, secretos ni contraseñas.
-- Datos personales del usuario más allá de su identificador.
+- Datos personales del usuario más allá de la información estrictamente necesaria.
 
-## 7. Qué se registra en cada servicio (a completar con cada pareja)
+## 7. Qué se registra en cada servicio
 
-| Servicio | Operaciones auditadas |
+| Servicio | Alcance documentado |
 |---|---|
 | Availability | `listar_eventos`, `listar_asientos`, `solicitar_reserva`, `reintentar_envio`, `consultar_solicitud` (detalle abajo) |
 | Booking | `procesar_reserva`, `consultar_asientos_ocupados`, `consultar_solicitud` (detalle abajo) |
-| Payment | A definir |
+| Payment | Requests HTTP, procesamiento de llamadas gRPC y eventos del servicio. |
 
 ### Availability
 
@@ -79,11 +116,21 @@ El motivo de rechazo usa los textos del contrato del broker: `asiento_ocupado`, 
 | `reintentar_envio` | El `solicitudId` de la solicitud pendiente que se reenvía | `ok` cuando el broker confirma la publicación · `error` con `broker_no_disponible` (sigue pendiente) o `excepcion` |
 | `consultar_solicitud` | El `solicitudId` consultado; viaja a Booking en `X-Trace-Id` | `ok` (cualquier estado, incluidos "en proceso" y "pendiente de envío") · `rechazada` con `solicitud_inexistente` (también si es de otro usuario) · `error` con `booking_no_disponible` o `excepcion` |
 
-El `Motivo` se registra como propiedad aparte en la línea de fin. `reintentar_envio` la ejecuta un proceso en segundo plano de Availability cada 15 segundos, sobre las solicitudes que quedaron pendientes de envío porque el broker no respondió (patrón Outbox). En cada vuelta reenvía las pendientes registradas hace más de 90 segundos, de la más vieja a la más nueva, y se detiene en la primera que el broker no confirma. Cada intento registra su propio `reintentar_envio`. Reenvía el mensaje con el mismo `solicitudId`, que es el `MessageId` del contrato del broker. Usa ese `solicitudId` como `TraceId`, así el reenvío queda en la misma cadena de sucesos que el `solicitar_reserva` que creó la solicitud.
+El `Motivo` se registra como propiedad aparte en la línea de fin.
+
+`reintentar_envio` la ejecuta un proceso en segundo plano de Availability cada 15 segundos, sobre las solicitudes que quedaron pendientes de envío porque el broker no respondió (patrón Outbox). En cada vuelta reenvía las pendientes registradas hace más de 90 segundos, de la más vieja a la más nueva, y se detiene en la primera que el broker no confirma.
+
+Cada intento registra su propio `reintentar_envio`. Reenvía el mensaje con el mismo `solicitudId`, que es el `MessageId` del contrato del broker. Usa ese `solicitudId` como `TraceId`, así el reenvío queda en la misma cadena de sucesos que el `solicitar_reserva` que creó la solicitud.
 
 Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availability.Gateways` llama a `IAuditLogger`, porque `Shared.Observability` depende de ASP.NET Core y los casos de uso no pueden referenciarlo sin romper Clean Architecture.
 
 ### Booking
+
+La trazabilidad se establece mediante el middleware `UseTraceId` para los requests HTTP.
+
+Durante el procesamiento de una solicitud recibida desde el broker, Booking utiliza el `solicitudId` como `TraceId`.
+
+En las llamadas a Payment mediante gRPC, el interceptor `TraceIdGrpcClientInterceptor` transmite el identificador en la metadata `x-trace-id`.
 
 | `Operacion` | `TraceId` | `Resultado` y `Motivo` |
 |---|---|---|
@@ -92,3 +139,13 @@ Los casos de uso usan un puerto propio (`IAuditoria`) y un adaptador en `Availab
 | `consultar_solicitud` | El `X-Trace-Id` del pedido (Availability manda el `solicitudId`), o un Guid nuevo si no viene | `ok` · `rechazada` con `solicitud_inexistente` (Booking todavía no la procesó, es el 404) · `error` (`excepcion`) |
 
 Un 401 por token inválido lo resuelve el middleware de autenticación antes del controller y no genera auditoría de Booking. El vencimiento automático de reservas no se audita: no nace de una solicitud ni de un pedido y corre cada pocos segundos casi siempre sin hacer nada.
+
+Los logs se envían a Seq identificados con la propiedad `Servicio = booking`.
+
+### Payment
+
+Payment incorpora la configuración de observabilidad mediante `AddObservability("payment")`.
+
+El middleware `UseTraceId` establece el contexto de trazabilidad para los requests HTTP, y el interceptor `TraceIdGrpcInterceptor` recupera el identificador recibido en las llamadas gRPC.
+
+Los logs se envían a Seq identificados con la propiedad `Servicio = payment`.
