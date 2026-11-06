@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="850" viewBox="0 0 900 850" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#374151"/>
+    </marker>
+  </defs>
+
+  <!-- Fondo blanco: se lee igual con el tema claro y el oscuro de GitHub -->
+  <rect x="0" y="0" width="900" height="850" fill="#ffffff"/>
+  <text x="30" y="36" font-size="17" font-weight="bold" fill="#111827">Diagrama de arquitectura del sistema de reserva de asientos</text>
+
+  <!-- Zona de consistencia eventual: broker, Booking, Payment y sus bases -->
+  <path d="M300,160 H862 V560 H612 V772 H300 Z" fill="#fffbeb" stroke="#d97706" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="312" y="760" font-size="12" font-weight="bold" fill="#b45309">Zona de consistencia eventual</text>
+
+  <!-- Flechas -->
+  <g fill="none" stroke="#374151" stroke-width="1.6">
+    <path d="M110,110 V168" marker-end="url(#flecha)"/>
+    <path d="M110,226 V298" marker-end="url(#flecha)"/>
+    <path d="M130,380 V438" marker-end="url(#flecha)"/>
+    <path d="M230,310 L378,226" marker-end="url(#flecha)"/>
+    <path d="M740,298 V220 H562" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+    <path d="M230,345 H638" marker-end="url(#flecha)"/>
+    <path d="M640,362 L513,468" marker-end="url(#flecha)"/>
+    <path d="M740,370 V418" marker-end="url(#flecha)"/>
+    <path d="M470,540 V648" marker-end="url(#flecha)"/>
+    <path d="M230,372 H270 V600 H638" marker-end="url(#flecha)"/>
+    <path d="M840,335 H856 V610 H842" marker-end="url(#flecha)"/>
+    <path d="M560,505 H690 V578" marker-end="url(#flecha)"/>
+    <path d="M740,640 V698" marker-end="url(#flecha)"/>
+    <path d="M800,298 V118" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+    <path d="M638,88 H192" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+  </g>
+
+  <!-- Punto donde el sistema pasa a ser eventualmente consistente -->
+  <circle cx="300" cy="270" r="7" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
+  <text x="290" y="244" font-size="11" font-weight="bold" fill="#b45309" text-anchor="end">empieza la</text>
+  <text x="290" y="258" font-size="11" font-weight="bold" fill="#b45309" text-anchor="end">consistencia eventual</text>
+
+  <!-- Etiquetas de las flechas -->
+  <g font-size="11" fill="#1f2937">
+    <text x="118" y="144">HTTPS</text>
+    <text x="350" y="258" font-weight="bold">PUBLISH</text>
+    <text x="651" y="212" font-weight="bold" text-anchor="middle">SUBSCRIBE</text>
+    <text x="435" y="338" text-anchor="middle"><tspan font-weight="bold">GET</tspan> · ocupación y seguimiento</text>
+    <text x="560" y="405" text-anchor="end"><tspan font-weight="bold">CALL</tspan> · gRPC</text>
+    <text x="282" y="578" font-weight="bold">AUTHENTICATE</text>
+    <text x="282" y="591">login y token de servicio</text>
+    <text x="850" y="512" font-weight="bold" text-anchor="end">AUTHENTICATE</text>
+    <text x="850" y="525" text-anchor="end">valida tokens y</text>
+    <text x="850" y="538" text-anchor="end">pide token de servicio</text>
+    <text x="572" y="522" font-weight="bold">AUTHENTICATE</text>
+    <text x="572" y="535">valida tokens</text>
+    <text x="748" y="674">login federado</text>
+    <text x="792" y="146" text-anchor="end">reserva creada y confirmada</text>
+    <text x="415" y="80" text-anchor="middle">aviso al usuario</text>
+  </g>
+
+  <!-- Componentes -->
+  <rect x="30" y="60" width="160" height="50" rx="25" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>
+  <text x="110" y="90" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Usuario / visitante</text>
+
+  <rect x="30" y="170" width="160" height="56" rx="6" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>
+  <text x="110" y="193" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Public IP Addresses</text>
+  <text x="110" y="211" font-size="11" fill="#334155" text-anchor="middle">punto de entrada público</text>
+
+  <rect x="30" y="300" width="200" height="80" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+  <text x="130" y="327" font-size="14" font-weight="bold" fill="#0b1b3a" text-anchor="middle">Availability Site</text>
+  <text x="130" y="345" font-size="11" fill="#1e3a8a" text-anchor="middle">ASP.NET MVC</text>
+  <text x="130" y="362" font-size="11" fill="#1e3a8a" text-anchor="middle">Clean Architecture</text>
+
+  <g fill="#dcfce7" stroke="#15803d" stroke-width="1.5">
+    <path d="M50,448 V504 A80,8 0 0 0 210,504 V448"/>
+    <ellipse cx="130" cy="448" rx="80" ry="8"/>
+    <path d="M660,428 V482 A80,8 0 0 0 820,482 V428"/>
+    <ellipse cx="740" cy="428" rx="80" ry="8"/>
+    <path d="M390,658 V712 A80,8 0 0 0 550,712 V658"/>
+    <ellipse cx="470" cy="658" rx="80" ry="8"/>
+  </g>
+  <text x="130" y="478" font-size="13" font-weight="bold" fill="#052e16" text-anchor="middle">SQL Database</text>
+  <text x="130" y="495" font-size="11" fill="#14532d" text-anchor="middle">Availability · SQLite</text>
+  <text x="740" y="458" font-size="13" font-weight="bold" fill="#052e16" text-anchor="middle">SQL Database</text>
+  <text x="740" y="475" font-size="11" fill="#14532d" text-anchor="middle">Booking · PostgreSQL</text>
+  <text x="470" y="688" font-size="13" font-weight="bold" fill="#052e16" text-anchor="middle">SQL Database</text>
+  <text x="470" y="705" font-size="11" fill="#14532d" text-anchor="middle">Payment · SQLite</text>
+
+  <polygon points="395,190 545,190 560,220 545,250 395,250 380,220" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.6"/>
+  <text x="470" y="216" font-size="13" font-weight="bold" fill="#2e1065" text-anchor="middle">Message Broker</text>
+  <text x="470" y="233" font-size="11" fill="#4c1d95" text-anchor="middle">Azure Service Bus</text>
+
+  <rect x="640" y="300" width="200" height="70" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+  <text x="740" y="327" font-size="14" font-weight="bold" fill="#0b1b3a" text-anchor="middle">Booking REST API</text>
+  <text x="740" y="345" font-size="11" fill="#1e3a8a" text-anchor="middle">N-Layer · varias réplicas</text>
+
+  <rect x="380" y="470" width="180" height="70" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+  <text x="470" y="497" font-size="14" font-weight="bold" fill="#0b1b3a" text-anchor="middle">Payment gRPC API</text>
+  <text x="470" y="515" font-size="11" fill="#1e3a8a" text-anchor="middle">N-Layer</text>
+
+  <rect x="640" y="580" width="200" height="60" rx="6" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.6"/>
+  <text x="740" y="605" font-size="13" font-weight="bold" fill="#2e1065" text-anchor="middle">Authorization Server</text>
+  <text x="740" y="623" font-size="11" fill="#4c1d95" text-anchor="middle">Keycloak</text>
+
+  <rect x="640" y="700" width="200" height="56" rx="6" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>
+  <text x="740" y="723" font-size="12" font-weight="bold" fill="#0f172a" text-anchor="middle">3rd party Identity providers</text>
+  <text x="740" y="741" font-size="11" fill="#334155" text-anchor="middle">GitHub</text>
+
+  <rect x="640" y="60" width="200" height="56" rx="6" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <text x="740" y="84" font-size="12" font-weight="bold" fill="#431407" text-anchor="middle">Servicio de notificaciones</text>
+  <text x="740" y="102" font-size="11" fill="#7c2d12" text-anchor="middle">no programado</text>
+
+  <!-- Leyenda -->
+  <g font-size="11" fill="#1f2937">
+    <rect x="30" y="796" width="14" height="14" rx="3" fill="#dbeafe" stroke="#1d4ed8"/>
+    <text x="50" y="807">Microservicio</text>
+    <rect x="160" y="796" width="14" height="14" rx="3" fill="#dcfce7" stroke="#15803d"/>
+    <text x="180" y="807">Base de datos</text>
+    <rect x="290" y="796" width="14" height="14" rx="3" fill="#ede9fe" stroke="#6d28d9"/>
+    <text x="310" y="807">Infraestructura compartida</text>
+    <rect x="470" y="796" width="14" height="14" rx="3" fill="#f1f5f9" stroke="#475569"/>
+    <text x="490" y="807">Fuera del sistema</text>
+    <rect x="610" y="796" width="14" height="14" rx="3" fill="#ffedd5" stroke="#c2410c" stroke-dasharray="3 2"/>
+    <text x="630" y="807">No programado</text>
+
+    <path d="M30,830 H62" stroke="#374151" stroke-width="1.6" marker-end="url(#flecha)"/>
+    <text x="70" y="834">Llamada sincrónica</text>
+    <path d="M190,830 H222" stroke="#374151" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+    <text x="230" y="834">Asincrónica o no programada</text>
+    <rect x="410" y="823" width="22" height="14" fill="#fffbeb" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="440" y="834">Zona de consistencia eventual</text>
+    <circle cx="617" cy="830" r="6" fill="#d97706"/>
+    <text x="630" y="834">Inicio de la consistencia eventual</text>
+  </g>
+</svg>

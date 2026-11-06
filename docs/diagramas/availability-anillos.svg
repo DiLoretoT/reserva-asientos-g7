@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 1330" width="1300" height="1330" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif">
+  <title>Availability: vista general de los cuatro anillos de Clean Architecture</title>
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2c2c2a"/>
+    </marker>
+    <marker id="implementa" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="13" markerHeight="13" orient="auto-start-reverse">
+      <path d="M1,1 L11,6 L1,11 z" fill="#ffffff" stroke="#2c2c2a" stroke-width="1.2"/>
+    </marker>
+    <style>
+      .anillo-titulo { font-size: 17px; font-weight: 700; fill: #2c2c2a; }
+      .anillo-sub { font-size: 12.5px; fill: #55534d; }
+      .caja { fill: #ffffff; stroke: #8a877e; stroke-width: 1.2; }
+      .externa { fill: #ffffff; stroke: #8a877e; stroke-width: 1.2; stroke-dasharray: 6 4; }
+      .caja-titulo { font-size: 14px; font-weight: 700; fill: #2c2c2a; }
+      .caja-texto { font-size: 12.5px; fill: #3d3c38; }
+      .caja-nota { font-size: 12px; fill: #6b6a65; font-style: italic; }
+      .dep { stroke: #2c2c2a; stroke-width: 1.6; fill: none; marker-end: url(#flecha); }
+      .impl { stroke: #2c2c2a; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; marker-end: url(#implementa); }
+      .externo { stroke: #8a877e; stroke-width: 1.4; fill: none; stroke-dasharray: 3 4; }
+      .etiqueta { font-size: 12px; fill: #2c2c2a; font-weight: 600; }
+      .fondo-etiqueta { fill: #ffffff; opacity: 0.85; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1300" height="1330" fill="#ffffff"/>
+  <text x="650" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#2c2c2a">Availability, vista general de Clean Architecture</text>
+
+  <!-- Anillo 4 -->
+  <rect x="20" y="62" width="1260" height="1158" rx="44" fill="#e9e7e0" stroke="#b9b6ac" stroke-width="1.5"/>
+  <text x="48" y="92" class="anillo-titulo">Anillo 4. Frameworks &amp; Drivers</text>
+
+  <rect x="60" y="110" width="760" height="170" rx="12" class="caja"/>
+  <text x="80" y="136" class="caja-titulo">Availability.Web (ASP.NET Core MVC)</text>
+  <text x="80" y="162" class="caja-texto">EventosController, ReservasController, SolicitudesController, CuentaController</text>
+  <text x="80" y="186" class="caja-texto">Vistas Razor (Eventos, Reservas, Solicitudes y el layout común)</text>
+  <text x="80" y="210" class="caja-texto">Program.cs registra los casos de uso, los gateways y el inicio de sesión</text>
+  <text x="80" y="234" class="caja-texto">ReintentoEnvioSolicitudesService reintenta en segundo plano el envío al broker</text>
+  <text x="80" y="262" class="caja-nota">Los controllers reciben el pedido HTTP, leen el usuario de la cookie y eligen la vista.</text>
+
+  <rect x="860" y="130" width="380" height="120" rx="12" class="externa"/>
+  <text x="880" y="158" class="caja-titulo">Keycloak</text>
+  <text x="880" y="184" class="caja-texto">Servidor de autorización</text>
+  <text x="880" y="206" class="caja-texto">Login del usuario con OpenID Connect</text>
+  <text x="880" y="228" class="caja-texto">Token de servicio para llamar a Booking</text>
+
+  <rect x="100" y="1098" width="340" height="96" rx="12" class="externa"/>
+  <text x="120" y="1126" class="caja-titulo">SQLite</text>
+  <text x="120" y="1150" class="caja-texto">Base propia de Availability,</text>
+  <text x="120" y="1172" class="caja-texto">accedida con Entity Framework Core</text>
+
+  <rect x="480" y="1098" width="340" height="96" rx="12" class="externa"/>
+  <text x="500" y="1126" class="caja-titulo">Booking API (REST)</text>
+  <text x="500" y="1150" class="caja-texto">Asientos ocupados de un evento</text>
+  <text x="500" y="1172" class="caja-texto">y estado de una solicitud</text>
+
+  <rect x="860" y="1098" width="340" height="96" rx="12" class="externa"/>
+  <text x="880" y="1126" class="caja-titulo">Broker (Azure Service Bus)</text>
+  <text x="880" y="1150" class="caja-texto">Recibe las solicitudes de reserva.</text>
+  <text x="880" y="1172" class="caja-texto">Sin configurar, se usa un publicador simulado.</text>
+
+  <!-- Anillo 3 -->
+  <rect x="60" y="310" width="1180" height="760" rx="36" fill="#dcd9f4" stroke="#a9a3e0" stroke-width="1.5"/>
+  <text x="88" y="340" class="anillo-titulo">Anillo 3. Interface Adapters</text>
+
+  <rect x="80" y="400" width="232" height="190" rx="12" class="caja"/>
+  <text x="96" y="426" class="caja-titulo">Availability.Controllers</text>
+  <text x="96" y="452" class="caja-texto">ListarEventosController</text>
+  <text x="96" y="474" class="caja-texto">ListarAsientosController</text>
+  <text x="96" y="496" class="caja-texto">SolicitarReservaController</text>
+  <text x="96" y="518" class="caja-texto">ConsultarEstadoSolicitud-</text>
+  <text x="96" y="536" class="caja-texto">Controller</text>
+  <text x="96" y="562" class="caja-nota">Arman el InputDataRequest y</text>
+  <text x="96" y="578" class="caja-nota">ejecutan el caso de uso</text>
+
+  <rect x="988" y="400" width="232" height="210" rx="12" class="caja"/>
+  <text x="1004" y="426" class="caja-titulo">Availability.Presenters</text>
+  <text x="1004" y="452" class="caja-texto">ListarEventosPresenter</text>
+  <text x="1004" y="474" class="caja-texto">ListarAsientosPresenter</text>
+  <text x="1004" y="496" class="caja-texto">SolicitarReservaPresenter</text>
+  <text x="1004" y="518" class="caja-texto">ConsultarEstadoSolicitud-</text>
+  <text x="1004" y="536" class="caja-texto">Presenter</text>
+  <text x="1004" y="560" class="caja-texto">y un ViewModel por página</text>
+  <text x="1004" y="588" class="caja-nota">Arman lo que muestra la vista</text>
+
+  <rect x="100" y="925" width="1100" height="130" rx="12" class="caja"/>
+  <text x="120" y="951" class="caja-titulo">Availability.Gateways</text>
+  <text x="120" y="978" class="caja-texto" font-weight="600">Persistencia</text>
+  <text x="120" y="1000" class="caja-texto">EventoRepository, SolicitudRepository</text>
+  <text x="120" y="1022" class="caja-texto">AvailabilityDbContext y entidades *Db</text>
+  <text x="500" y="978" class="caja-texto" font-weight="600">Booking</text>
+  <text x="500" y="1000" class="caja-texto">ClienteBooking (cliente HTTP)</text>
+  <text x="500" y="1022" class="caja-texto">TokenServicio y TokenServicioHandler</text>
+  <text x="880" y="978" class="caja-texto" font-weight="600">Broker y logs</text>
+  <text x="880" y="1000" class="caja-texto">PublicadorSolicitudesServiceBus</text>
+  <text x="880" y="1022" class="caja-texto">PublicadorSolicitudesSimulado</text>
+  <text x="880" y="1044" class="caja-texto">AuditoriaObservability (logs en Seq)</text>
+
+  <!-- Anillo 2 -->
+  <rect x="330" y="370" width="640" height="530" rx="30" fill="#d4ebdc" stroke="#94c7a6" stroke-width="1.5"/>
+  <text x="352" y="398" class="anillo-titulo">Anillo 2. Use Cases</text>
+  <text x="530" y="398" class="anillo-sub">(Availability.UseCases)</text>
+
+  <rect x="350" y="414" width="290" height="70" rx="10" class="caja"/>
+  <text x="366" y="440" class="caja-titulo">IInputPort</text>
+  <text x="366" y="464" class="caja-texto">uno por caso de uso, hereda de IPort&lt;T&gt;</text>
+
+  <rect x="660" y="414" width="290" height="70" rx="10" class="caja"/>
+  <text x="676" y="440" class="caja-titulo">IOutputPort</text>
+  <text x="676" y="464" class="caja-texto">uno por caso de uso, hereda de IPort&lt;T&gt;</text>
+
+  <rect x="350" y="512" width="600" height="80" rx="10" class="caja"/>
+  <text x="366" y="538" class="caja-titulo">Interactor de cada caso de uso</text>
+  <text x="366" y="560" class="caja-texto">ListarEventos, ListarAsientosDisponibles, SolicitarReserva, ReintentarEnvio</text>
+  <text x="366" y="580" class="caja-texto">y ConsultarEstadoSolicitud, con sus modelos de entrada y salida</text>
+
+  <rect x="350" y="782" width="600" height="98" rx="10" class="caja"/>
+  <text x="366" y="808" class="caja-titulo">Puertos hacia afuera</text>
+  <text x="366" y="832" class="caja-texto">IEventoRepository, ISolicitudRepository</text>
+  <text x="366" y="854" class="caja-texto">IConsultaOcupacion, IConsultaEstadoSolicitud, IPublicadorSolicitudes, IAuditoria</text>
+
+  <!-- Anillo 1 -->
+  <rect x="450" y="620" width="400" height="136" rx="24" fill="#f7e2c2" stroke="#e0b475" stroke-width="1.5"/>
+  <text x="470" y="646" class="anillo-titulo">Anillo 1. Entities</text>
+  <text x="628" y="646" class="anillo-sub">(Availability.Entities)</text>
+  <rect x="468" y="664" width="104" height="40" rx="8" class="caja"/>
+  <text x="520" y="689" text-anchor="middle" class="caja-titulo">Evento</text>
+  <rect x="598" y="664" width="104" height="40" rx="8" class="caja"/>
+  <text x="650" y="689" text-anchor="middle" class="caja-titulo">Asiento</text>
+  <rect x="680" y="712" width="152" height="36" rx="8" class="caja"/>
+  <text x="756" y="735" text-anchor="middle" class="caja-titulo">SolicitudReserva</text>
+  <line x1="572" y1="684" x2="596" y2="684" class="dep"/>
+  <text x="470" y="737" class="caja-nota">Un evento tiene asientos.</text>
+  <text x="470" y="751" class="caja-nota">La solicitud los referencia por id.</text>
+
+  <!-- Relaciones de código: siempre hacia adentro -->
+  <!-- Web a Controllers -->
+  <path d="M 76 280 L 76 382 L 196 382 L 196 398" class="dep"/>
+  <rect x="140" y="362" width="52" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="144" y="376" class="etiqueta">llaman</text>
+  <!-- Web a Gateways: Program.cs llama a AddGateways -->
+  <path d="M 60 250 L 40 250 L 40 990 L 98 990" class="dep"/>
+  <rect x="44" y="700" width="58" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="47" y="714" class="etiqueta">registra</text>
+  <!-- Web a Presenters (ViewModels) -->
+  <path d="M 760 280 L 760 298 L 1104 298 L 1104 398" class="dep"/>
+  <text x="900" y="292" class="etiqueta">muestran los ViewModels</text>
+  <!-- Controllers a IInputPort -->
+  <path d="M 312 449 L 348 449" class="dep"/>
+  <!-- Presenters implementan IOutputPort -->
+  <path d="M 988 449 L 952 449" class="impl"/>
+  <!-- Interactor implementa IInputPort -->
+  <path d="M 495 512 L 495 486" class="impl"/>
+  <!-- Interactor usa IOutputPort -->
+  <path d="M 805 512 L 805 486" class="dep"/>
+  <!-- Interactor usa entidades -->
+  <path d="M 650 592 L 650 618" class="dep"/>
+  <!-- Interactor usa puertos hacia afuera -->
+  <path d="M 380 592 L 380 780" class="dep"/>
+  <rect x="386" y="676" width="38" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="388" y="690" class="etiqueta">usan</text>
+  <!-- Puertos hacia afuera usan entidades -->
+  <path d="M 900 782 L 900 700 L 852 700" class="dep"/>
+  <!-- Gateways implementan puertos hacia afuera -->
+  <path d="M 650 925 L 650 882" class="impl"/>
+  <rect x="660" y="896" width="88" height="18" rx="4" class="fondo-etiqueta"/>
+  <text x="662" y="910" class="etiqueta">implementan</text>
+
+  <!-- Comunicación con sistemas externos -->
+  <path d="M 820 190 L 860 190" class="externo"/>
+  <path d="M 270 1055 L 270 1098" class="externo"/>
+  <path d="M 650 1055 L 650 1098" class="externo"/>
+  <path d="M 1030 1055 L 1030 1098" class="externo"/>
+  <path d="M 1200 985 L 1260 985 L 1260 190 L 1240 190" class="externo"/>
+
+  <!-- Referencias -->
+  <rect x="20" y="1236" width="1260" height="80" rx="12" fill="#f7f7f5" stroke="#d3d1c7"/>
+  <path d="M 44 1264 L 104 1264" class="dep"/>
+  <text x="116" y="1268" class="caja-texto">depende de o usa, en el código</text>
+  <path d="M 380 1264 L 440 1264" class="impl"/>
+  <text x="452" y="1268" class="caja-texto">implementa una interfaz</text>
+  <path d="M 660 1264 L 720 1264" class="externo"/>
+  <text x="732" y="1268" class="caja-texto">se comunica con un sistema externo</text>
+  <rect x="1010" y="1252" width="60" height="22" rx="5" class="externa"/>
+  <text x="1082" y="1268" class="caja-texto">sistema externo</text>
+  <text x="44" y="1300" class="caja-nota">Todas las flechas del código apuntan hacia adentro. Cada anillo conoce a los anillos interiores y no conoce a los exteriores.</text>
+</svg>

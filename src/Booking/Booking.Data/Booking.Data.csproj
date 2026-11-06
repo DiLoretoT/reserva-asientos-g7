@@ -1,6 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.64.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.64.0" PrivateAssets="all" />
+    <PackageReference Include="Google.Protobuf" Version="3.27.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="../../Payment/Payment.Grpc/Protos/Payment.proto" GrpcServices="Client">
+      <Link>Protos/Payment.proto</Link>
+    </Protobuf>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Booking.Domain\Booking.Domain.csproj" />
   </ItemGroup>
 
